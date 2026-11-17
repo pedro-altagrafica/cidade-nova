@@ -1881,7 +1881,7 @@ const R3 = (function () {
     cellAt('deck', d => { d.fillStyle = '#ffffff'; d.fillRect(0, 0, 64, 64); for (let y = 0; y < 64; y += 8) { d.fillStyle = 'rgba(0,0,0,0.22)'; d.fillRect(0, y + 7, 64, 1); d.fillStyle = 'rgba(0,0,0,0.1)'; d.fillRect((y * 5) % 50 + 4, y, 1, 7); } });
     cellAt('tile', d => { d.fillStyle = '#ffffff'; d.fillRect(0, 0, 64, 64); for (let y = 0; y < 64; y += 8) { d.fillStyle = 'rgba(0,0,0,0.16)'; d.fillRect(0, y + 6, 64, 2); d.fillStyle = 'rgba(0,0,0,0.07)'; for (let x = (y / 8 % 2) * 6; x < 64; x += 12) d.fillRect(x, y, 1, 6); } });
     // letreiros com o nome de cada negócio (abaixo das células)
-    Sim.BUSINESS.concat([['C3', 'AEROPORTO', '#1b3a5c'], ['C3', 'PORTO', '#1b4d5c'], ['C3', 'PARQUE', '#c2185b'], ['C3', 'ZOO', '#2e7d32'], ['C3', 'MUSEU', '#5d4037'], ['C3', 'CRUZEIROS', '#0d4a6b']]).forEach(([tier, name, color], k) => {
+    Sim.BUSINESS.concat([['C3', 'AEROPORTO', '#1b3a5c'], ['C3', 'PORTO', '#1b4d5c'], ['C3', 'PARQUE', '#c2185b'], ['C3', 'ZOO', '#2e7d32'], ['C3', 'MUSEU', '#5d4037'], ['C3', 'CRUZEIROS', '#0d4a6b'], ['C3', 'CENTRO  ↑', '#1f7a3d']]).forEach(([tier, name, color], k) => {
       const sx = (k % 4) * SIGN_W, sy = SIGN_Y + Math.floor(k / 4) * SIGN_H, small = tier === 'C1' || tier === 'I1';
       for (const [g, emis] of [[gd, false], [ge, true]]) {
         g.fillStyle = small ? '#f6efdf' : color; g.fillRect(sx, sy, SIGN_W, SIGN_H);
@@ -1895,6 +1895,47 @@ const R3 = (function () {
     });
     const mkTex = cv => { const t = new THREE.CanvasTexture(cv); t.anisotropy = 4; t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter; return t; };
     return { map: mkTex(dif), emissive: mkTex(emi), gd, ge };
+  }
+  // placa verde da rodovia com texto livre (usa a última vaga dos letreiros)
+  const SIGN_CITY = 67;
+  function drawRoadSign(k, text) {
+    if (!atlas) return; const sx = (k % 4) * SIGN_W, sy = SIGN_Y + Math.floor(k / 4) * SIGN_H;
+    for (const [g, emis] of [[atlas.gd, false], [atlas.ge, true]]) {
+      g.fillStyle = '#1f7a3d'; g.fillRect(sx, sy, SIGN_W, SIGN_H); g.strokeStyle = '#ffffff'; g.lineWidth = 3; g.strokeRect(sx + 3, sy + 3, SIGN_W - 6, SIGN_H - 6);
+      g.fillStyle = '#ffffff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      let fs = 24; for (; fs > 11; fs--) { g.font = `800 ${fs}px Nunito, "Trebuchet MS", Arial, sans-serif`; const mt = g.measureText(text); if (!mt || !(mt.width > SIGN_W - 22)) break; }
+      g.fillText(text, sx + SIGN_W / 2, sy + SIGN_H / 2 + 1);
+      if (emis) { g.fillStyle = 'rgba(0,0,0,0.35)'; g.fillRect(sx, sy, SIGN_W, SIGN_H); }
+    }
+    atlas.map.needsUpdate = true; atlas.emissive.needsUpdate = true;
+  }
+  let hwMesh = null, hwSignName = '';
+  function rebuildHighwaySigns() {
+    if (hwMesh) { scene.remove(hwMesh); hwMesh.geometry.dispose(); hwMesh = null; }
+    if (!city || !city.entry) return;
+    const nm = ('BEM-VINDO A ' + (city.name || 'CIDADE NOVA')).toUpperCase(); if (nm !== hwSignName) { hwSignName = nm; drawRoadSign(SIGN_CITY, nm); }
+    const gb = new GeoBuilder(), POST = [0.55, 0.57, 0.6], BACK = [0.16, 0.45, 0.24], e0 = city.idx(city.entry.x, city.entry.z);
+    if (city.road[e0] !== 3) return;
+    // caminho da rodovia a partir da borda: acha a direção e o primeiro acesso da cidade
+    const path = [e0]; let prev = -1, cur = e0;
+    for (let k = 0; k < 80; k++) { const x = cur % W, z = (cur / W) | 0; let nxt = -1, acc = false; for (const [dx, dz] of NB4) { const xx = x + dx, zz = z + dz; if (xx < 0 || zz < 0 || xx >= W || zz >= H) continue; const j = zz * W + xx; if (j === prev || !city.roadConn(cur, j)) continue; if (city.road[j] === 3) nxt = j; else acc = true; } if (acc || nxt < 0) break; prev = cur; cur = nxt; path.push(cur); }
+    const board = (i, dirx, dirz, lat, y0, w, uvk, gantry) => {   // placa voltada para quem chega (vem no sentido dir)
+      const cx = (i % W) - HW + 0.5, cz = ((i / W) | 0) - HH + 0.5, by = surfY(i, 0.5, 0.5), nx = -dirz, nz = dirx;   // nx,nz: lado direito de quem vem
+      const px = cx + nx * lat, pz = cz + nz * lat, hgt = w * SIGN_H / SIGN_W, fx = -dirx, fz = -dirz, ax = nx * w / 2, az = nz * w / 2;
+      const P = (s, y) => [px + ax * s - fx * 0.004, by + y, pz + az * s - fz * 0.004];
+      if (gantry) { for (const sg of [-1, 1]) { const qx = cx + nx * 0.52 * sg, qz = cz + nz * 0.52 * sg; solidBox(gb, qx - 0.018, by, qz - 0.018, qx + 0.018, by + y0 + hgt + 0.03, qz + 0.018, POST); } solidBox(gb, Math.min(cx - nx * 0.52, cx + nx * 0.52) - 0.015, by + y0 + hgt - 0.02, Math.min(cz - nz * 0.52, cz + nz * 0.52) - 0.015, Math.max(cx - nx * 0.52, cx + nx * 0.52) + 0.015, by + y0 + hgt + 0.01, Math.max(cz - nz * 0.52, cz + nz * 0.52) + 0.015, POST); }
+      else for (const sg of [-0.35, 0.35]) solidBox(gb, px + ax * sg * 2 - 0.012, by, pz + az * sg * 2 - 0.012, px + ax * sg * 2 + 0.012, by + y0 + 0.02, pz + az * sg * 2 + 0.012, POST);
+      const b0 = P(-1, y0), b1 = P(1, y0), b2 = P(1, y0 + hgt), b3 = P(-1, y0 + hgt);
+      { const ex = fx ? 0.005 : 0.01, ez = fz ? 0.005 : 0.01; solidBox(gb, Math.min(b0[0], b1[0]) - ex, by + y0 - 0.008, Math.min(b0[2], b1[2]) - ez, Math.max(b0[0], b1[0]) + ex, by + y0 + hgt + 0.008, Math.max(b0[2], b1[2]) + ez, BACK); }
+      const u = signUV(uvk), F = (p, d) => [p[0] + fx * d, p[1], p[2] + fz * d];
+      // a face com o texto olha para quem chega (sentido contrário ao da viagem), um pouco à frente da chapa
+      const q0 = F(b0, 0.009), q1 = F(b1, 0.009), q2 = F(b2, 0.009), q3 = F(b3, 0.009);
+      gb.tri(q0, q1, q2, [u.u0, u.v0], [u.u1, u.v0], [u.u1, u.v1], [1, 1, 1]); gb.tri(q0, q2, q3, [u.u0, u.v0], [u.u1, u.v1], [u.u0, u.v1], [1, 1, 1]);
+    };
+    { let k = 2; while (k < Math.min(path.length - 1, 16) && (isDeck(path[k]) || isDeck(path[k + 1]) || isDeck(path[k - 1]))) k++; if (k < path.length - 1 && k < 16) { const i = path[k], j = path[k + 1], dx = (j % W) - (i % W), dz = ((j / W) | 0) - ((i / W) | 0); board(i, dx, dz, 0.72, 0.18, 0.7, SIGN_CITY, false); } }
+    if (path.length >= 8) { const i = path[path.length - 3], j = path[path.length - 2], dx = (j % W) - (i % W), dz = ((j / W) | 0) - ((i / W) | 0); board(i, dx, dz, 0, 0.5, 0.56, 66, true); }
+    if (gb.empty) return;
+    hwMesh = new THREE.Mesh(gb.build(), buildingMat); hwMesh.castShadow = true; scene.add(hwMesh);
   }
 
   /* ---------- estilos visuais ---------- */
@@ -3524,9 +3565,9 @@ const R3 = (function () {
     for (const [, list] of rides) for (const it of list) scene.remove(it.obj); rides.clear(); if (amb) { amb.lastYear = -1; amb.fw.shows.length = 0; for (const bt of amb.boats) bt.on = false; }
     agents.length = 0; cits.length = 0; homeCnt.clear(); followId = -1; carsSeeded = false; slotMap.clear(); smoke.length = 0; peds.length = 0; matches.clear(); sparks.length = 0; lists = null; fireSent.clear(); obstacles.clear(); setGhost(null); setCoverage(null); setTiles(null);
     buildTerrain(); rebuildFog(); rebuildZones(); rebuildTrees();
-    rampCache = null; connCache = null; junctionCache = null; signalCache = null; sigArms.clear(); sigCtl.clear(); pedWant.clear();
+    rampCache = null; deckCache = null; connCache = null; junctionCache = null; signalCache = null; sigArms.clear(); sigCtl.clear(); pedWant.clear();
     for (let i = 0; i < CX * CX; i++) { rebuildChunk(i); rebuildRoadChunk(i); }
-    rebuildLamps(); syncTurbines(); syncHubs(); syncRides(); rebuildEmitters();
+    rebuildBridges(); rebuildHighwaySigns(); rebuildLamps(); syncTurbines(); syncHubs(); syncRides(); rebuildEmitters();
     const d = city.dirty; d.terrain = d.trees = d.zones = d.buildings = d.fog = d.lamps = false; d.chunks.clear(); d.roads.clear();
     if (overlayName) rebuildOverlay();
     updateCamera();
@@ -3607,6 +3648,36 @@ const R3 = (function () {
   let minDist = 3.5;
   let rampCache = null;
   function rampMaskC(i) { if (!rampCache) rampCache = new Int8Array(N).fill(-1); let m = rampCache[i]; if (m < 0) m = rampCache[i] = rampMask(i); return m; }
+  // ----- pontes: o tabuleiro sobe a partir da margem (mais alto quanto mais longe da terra), sem degrau e sem quina -----
+  const DECK_LIFT = [0, 0.13, 0.26, 0.36, 0.43, 0.48];
+  let deckCache = null;
+  const isDeck = i => city.road[i] && city.terrain[i] === T.WATER;
+  function buildDeck() {
+    deckCache = new Float32Array(N).fill(NaN);
+    const dist = new Int16Array(N).fill(-1), q = [];
+    const nb = i => { const x = i % W, z = (i / W) | 0, o = []; if (x > 0) o.push(i - 1); if (x < W - 1) o.push(i + 1); if (z > 0) o.push(i - W); if (z < H - 1) o.push(i + W); return o; };
+    for (let i = 0; i < N; i++) if (isDeck(i)) for (const j of nb(i)) if (city.road[j] && city.terrain[j] !== T.WATER && city.roadConn(i, j)) { dist[i] = 1; q.push(i); break; }
+    for (let h = 0; h < q.length; h++) { const i = q[h]; for (const j of nb(i)) if (dist[j] < 0 && isDeck(j) && city.roadConn(i, j)) { dist[j] = dist[i] + 1; q.push(j); } }
+    // pontes curtas sobem menos (o tamanho de cada ponte limita a altura)
+    const comp = new Int32Array(N).fill(-1), size = [];
+    for (let i = 0; i < N; i++) if (isDeck(i) && comp[i] < 0) { const id = size.length, st = [i]; comp[i] = id; let n = 0; while (st.length) { const k = st.pop(); n++; for (const j of nb(k)) if (comp[j] < 0 && isDeck(j) && city.roadConn(k, j)) { comp[j] = id; st.push(j); } } size.push(n); }
+    for (let i = 0; i < N; i++) if (isDeck(i)) deckCache[i] = city.height[i] * TH + Math.min(DECK_LIFT[Math.min(5, dist[i] < 0 ? 5 : dist[i])], 0.065 * size[comp[i]] + 0.02);
+  }
+  const deckC = i => { if (!deckCache) buildDeck(); return deckCache[i]; };
+  // valor e inclinação (para fora) do tabuleiro na borda da quadra i, no lado (dx, dz)
+  function deckEdge(i, dx, dz) {
+    const x = i % W, z = (i / W) | 0, nx = x + dx, nz = z + dz, ci = deckC(i);
+    if (nx < 0 || nz < 0 || nx >= W || nz >= H) return [ci, 0];
+    const j = nz * W + nx; if (!city.roadConn(i, j)) return [ci, 0];
+    if (isDeck(j)) { const cj = deckC(j); return [(ci + cj) / 2, cj - ci]; }
+    return [surfY(j, dx > 0 ? 0 : dx < 0 ? 1 : 0.5, dz > 0 ? 0 : dz < 0 ? 1 : 0.5), 0];   // chega na margem no nível da rua de terra, sem quina
+  }
+  const hermite = (p0, m0, p1, m1, t) => { const t2 = t * t, t3 = t2 * t; return (2 * t3 - 3 * t2 + 1) * p0 + (t3 - 2 * t2 + t) * m0 + (-2 * t3 + 3 * t2) * p1 + (t3 - t2) * m1; };
+  function deckAxis(c, eA, eB, s) { const mc = eB[0] - eA[0]; return s < 0.5 ? hermite(eA[0], -eA[1] * 0.5, c, mc * 0.5, s * 2) : hermite(c, mc * 0.5, eB[0], eB[1] * 0.5, s * 2 - 1); }
+  function deckY(i, u, v) {
+    u = clamp(u, 0, 1); v = clamp(v, 0, 1); const c = deckC(i);
+    return deckAxis(c, deckEdge(i, -1, 0), deckEdge(i, 1, 0), u) + deckAxis(c, deckEdge(i, 0, -1), deckEdge(i, 0, 1), v) - c;
+  }
   const smooth01 = t => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };
   // a rampa ocupa a quadra inteira, com entrada e saída arredondadas (meia quadra só quando sobe para os dois lados)
   // ligações de cada quadra de rua: 1 = +x, 2 = −x, 4 = +z, 8 = −z
@@ -3618,6 +3689,7 @@ const R3 = (function () {
     return m;
   }
   function surfY(i, u, v, mask) {
+    if (city.terrain[i] === T.WATER && city.road[i]) return deckY(i, u, v);
     if (mask === undefined) mask = rampMaskC(i);
     if (!mask) return city.height[i] * TH;
     const cm = connMaskC(i), E = 0.14;
@@ -3656,15 +3728,32 @@ const R3 = (function () {
     const conn = (i, j) => city.roadConn(i, j);
     for (let z = cz * CHUNK; z < (cz + 1) * CHUNK; z++) for (let x = cx * CHUNK; x < (cx + 1) * CHUNK; x++) {
       const i = z * W + x; if (!rd[i]) continue;
-      const mask = rampMaskC(i), type = rd[i], bridge = city.terrain[i] === T.WATER;
+      const bridge = city.terrain[i] === T.WATER, mask = bridge ? 16 : rampMaskC(i), type = rd[i];
       const L = x > 0 && conn(i, i - 1), R = x < W - 1 && conn(i, i + 1), U = z > 0 && conn(i, i - W), D = z < H - 1 && conn(i, i + W);
-      patch(gb, i, x, z, 0, 0, 1, 1, 0.02, type === 3 ? [0.33, 0.33, 0.35] : asphalt, mask);
+      patch(gb, i, x, z, 0, 0, 1, 1, 0.02, type === 3 ? [0.29, 0.3, 0.32] : asphalt, mask);
       const sw = type === 2 ? 0.08 : type === 3 ? 0.03 : 0.10;
-      const edge = type === 3 ? white : walk, eh = type === 3 ? 0.03 : 0.045;
-      if (!L) patch(gb, i, x, z, 0, 0, sw, 1, eh, edge, mask);
-      if (!R) patch(gb, i, x, z, 1 - sw, 0, 1, 1, eh, edge, mask);
-      if (!U) patch(gb, i, x, z, 0, 0, 1, sw, eh, edge, mask);
-      if (!D) patch(gb, i, x, z, 0, 1 - sw, 1, 1, eh, edge, mask);
+      if (type === 3) {
+        const SH = [0.42, 0.42, 0.43], sh = 0.1, ly = 0.026;
+        if (!L) { patch(gb, i, x, z, 0, 0, sh, 1, 0.022, SH, mask); patch(gb, i, x, z, sh, 0, sh + 0.014, 1, ly, white, mask); }
+        if (!R) { patch(gb, i, x, z, 1 - sh, 0, 1, 1, 0.022, SH, mask); patch(gb, i, x, z, 1 - sh - 0.014, 0, 1 - sh, 1, ly, white, mask); }
+        if (!U) { patch(gb, i, x, z, 0, 0, 1, sh, 0.022, SH, mask); patch(gb, i, x, z, 0, sh, 1, sh + 0.014, ly, white, mask); }
+        if (!D) { patch(gb, i, x, z, 0, 1 - sh, 1, 1, 0.022, SH, mask); patch(gb, i, x, z, 0, 1 - sh - 0.014, 1, 1 - sh, ly, white, mask); }
+        if (!bridge) {   // defensa metálica (postes e lâmina) nas beiradas sem saída
+          const GR = [0.74, 0.76, 0.8], PO = [0.42, 0.44, 0.48], hy = surfY(i, 0.5, 0.5), x0 = x - HW, z0 = z - HH, x1 = x0 + 1, z1 = z0 + 1;
+          for (const [has, horiz, at] of [[U, true, 0.025], [D, true, 0.975], [L, false, 0.025], [R, false, 0.975]]) {
+            if (has || mask) continue;
+            for (let k = 0; k < 4; k++) { const t = 0.125 + k * 0.25, px = horiz ? x0 + t : x0 + at, pz = horiz ? z0 + at : z0 + t; solidBox(gb, px - 0.008, hy + 0.02, pz - 0.008, px + 0.008, hy + 0.085, pz + 0.008, PO); }
+            if (horiz) solidBox(gb, x0, hy + 0.055, z0 + at - 0.007, x1, hy + 0.08, z0 + at + 0.007, GR); else solidBox(gb, x0 + at - 0.007, hy + 0.055, z0, x0 + at + 0.007, hy + 0.08, z1, GR);
+          }
+        }
+      }
+      const edge = walk, eh = 0.045;
+      if (type !== 3) {
+        if (!L) patch(gb, i, x, z, 0, 0, sw, 1, eh, edge, mask);
+        if (!R) patch(gb, i, x, z, 1 - sw, 0, 1, 1, eh, edge, mask);
+        if (!U) patch(gb, i, x, z, 0, 0, 1, sw, eh, edge, mask);
+        if (!D) patch(gb, i, x, z, 0, 1 - sw, 1, 1, eh, edge, mask);
+      }
       if (type !== 3) {
         // meio-fio e juntas do calçamento
         const cw = 0.018, jy = eh + 0.002;
@@ -3699,8 +3788,11 @@ const R3 = (function () {
           }
       }
       if (type === 3) {
-        if (straightH) { patch(gb, i, x, z, 0.05, 0.485, 0.45, 0.515, 0.03, dash, mask); patch(gb, i, x, z, 0.55, 0.485, 0.95, 0.515, 0.03, dash, mask); }
-        else if (straightV) { patch(gb, i, x, z, 0.485, 0.05, 0.515, 0.45, 0.03, dash, mask); patch(gb, i, x, z, 0.485, 0.55, 0.515, 0.95, 0.03, dash, mask); }
+        // eixo: faixa amarela tracejada (contínua dupla perto de cruzamentos) com tachas refletivas
+        const nearJ = j => j >= 0 && j < N && rd[j] && isJunction(j);
+        const solid = straightH ? nearJ(i - 1) || nearJ(i + 1) : straightV ? nearJ(i - W) || nearJ(i + W) : false;
+        if (straightH) { if (solid) { patch(gb, i, x, z, 0, 0.47, 1, 0.485, 0.03, dash, mask); patch(gb, i, x, z, 0, 0.515, 1, 0.53, 0.03, dash, mask); } else { patch(gb, i, x, z, 0.04, 0.488, 0.42, 0.512, 0.03, dash, mask); patch(gb, i, x, z, 0.54, 0.488, 0.92, 0.512, 0.03, dash, mask); } for (const t of [0.23, 0.73]) patch(gb, i, x, z, t, 0.493, t + 0.014, 0.507, 0.034, [0.98, 0.98, 0.95], mask); }
+        else if (straightV) { if (solid) { patch(gb, i, x, z, 0.47, 0, 0.485, 1, 0.03, dash, mask); patch(gb, i, x, z, 0.515, 0, 0.53, 1, 0.03, dash, mask); } else { patch(gb, i, x, z, 0.488, 0.04, 0.512, 0.42, 0.03, dash, mask); patch(gb, i, x, z, 0.488, 0.54, 0.512, 0.92, 0.03, dash, mask); } for (const t of [0.23, 0.73]) patch(gb, i, x, z, 0.493, t, 0.507, t + 0.014, 0.034, [0.98, 0.98, 0.95], mask); }
       } else if (type === 1) {
         if (straightH) { patch(gb, i, x, z, 0.08, 0.47, 0.34, 0.53, 0.03, dash, mask); patch(gb, i, x, z, 0.66, 0.47, 0.92, 0.53, 0.03, dash, mask); }
         else if (straightV) { patch(gb, i, x, z, 0.47, 0.08, 0.53, 0.34, 0.03, dash, mask); patch(gb, i, x, z, 0.47, 0.66, 0.53, 0.92, 0.03, dash, mask); }
@@ -3719,7 +3811,7 @@ const R3 = (function () {
         else if (straightV) { patch(gb, i, x, z, 0.465, 0, 0.485, 1, 0.03, dash, mask); patch(gb, i, x, z, 0.515, 0, 0.535, 1, 0.03, dash, mask); patch(gb, i, x, z, 0.24, 0.15, 0.26, 0.4, 0.03, white, mask); patch(gb, i, x, z, 0.74, 0.6, 0.76, 0.85, 0.03, white, mask); }
       }
       const x0 = x - HW, z0 = z - HH, x1 = x0 + 1, z1 = z0 + 1, hy = city.height[i] * TH;
-      if (mask) {
+      if (mask && !bridge) {
         // muro de arrimo acompanhando a curva da rampa
         const wallC = [0.5, 0.49, 0.46], NS = 8;
         for (const [ua, va, ub, vb, nx, nz, bit] of [[0, 0, 1, 0, 0, -1, 8], [0, 1, 1, 1, 0, 1, 4], [0, 0, 0, 1, -1, 0, 2], [1, 0, 1, 1, 1, 0, 1]]) {
@@ -3733,12 +3825,30 @@ const R3 = (function () {
         }
       }
       if (bridge) {
-        solidBox(gb, x0, -0.07, z0, x1, 0.0, z1, deck);
-        for (const [px, pz] of [[0.12, 0.12], [0.88, 0.12], [0.12, 0.88], [0.88, 0.88]]) solidBox(gb, x0 + px - 0.04, -0.3, z0 + pz - 0.04, x0 + px + 0.04, -0.06, z0 + pz + 0.04, [0.5, 0.5, 0.53]);
-        if (!L) solidBox(gb, x0 + 0.01, 0.045, z0, x0 + 0.03, 0.15, z1, rail);
-        if (!R) solidBox(gb, x1 - 0.03, 0.045, z0, x1 - 0.01, 0.15, z1, rail);
-        if (!U) solidBox(gb, x0, 0.045, z0 + 0.01, x1, 0.15, z0 + 0.03, rail);
-        if (!D) solidBox(gb, x0, 0.045, z1 - 0.03, x1, 0.15, z1 - 0.01, rail);
+        // laje do tabuleiro: face de baixo e beiradas de concreto acompanhando a subida
+        const NS = 8, SL = 0.085, CON = [0.7, 0.7, 0.68], CONd = [0.5, 0.5, 0.5], P = (u, v, dy) => [x0 + u, deckY(i, u, v) + dy, z0 + v];
+        for (let a = 0; a < NS; a++) for (let q = 0; q < NS; q++) { const ua = a / NS, ub = (a + 1) / NS, va = q / NS, vb = (q + 1) / NS; gb.quadOut(P(ua, va, -SL), P(ub, va, -SL), P(ub, vb, -SL), P(ua, vb, -SL), CONd, 0, -1, 0); }
+        const hw = type === 3, rimTop = hw ? 0.03 : 0.045;
+        for (const [ua, va, ub, vb, nx, nz, has] of [[0, 0, 1, 0, 0, -1, U], [0, 1, 1, 1, 0, 1, D], [0, 0, 0, 1, -1, 0, L], [1, 0, 1, 1, 1, 0, R]]) {
+          if (has) continue;
+          for (let k = 0; k < NS; k++) {
+            const t0 = k / NS, t1 = (k + 1) / NS, uA = lerp(ua, ub, t0), vA = lerp(va, vb, t0), uB = lerp(ua, ub, t1), vB = lerp(va, vb, t1);
+            gb.quadOut(P(uA, vA, -SL), P(uB, vB, -SL), P(uB, vB, rimTop), P(uA, vA, rimTop), CON, nx, 0, nz);
+            // guarda-corpo: mureta de concreto (rodovia: barreira mais alta) e corrimão de metal nas ruas
+            const ins = 0.012, iu = nx ? (nx > 0 ? -ins : ins) : 0, iv = nz ? (nz > 0 ? -ins : ins) : 0, wallH = hw ? 0.1 : 0.06, wcol = hw ? [0.82, 0.82, 0.8] : [0.78, 0.77, 0.74];
+            const a0 = P(uA, vA, rimTop), b0 = P(uB, vB, rimTop), a1 = P(uA + iu * 2.2, vA + iv * 2.2, rimTop), b1 = P(uB + iu * 2.2, vB + iv * 2.2, rimTop);
+            gb.quadOut([a0[0], a0[1], a0[2]], [b0[0], b0[1], b0[2]], [b0[0], b0[1] + wallH, b0[2]], [a0[0], a0[1] + wallH, a0[2]], wcol, nx, 0, nz);
+            gb.quadOut([a1[0], a1[1], a1[2]], [b1[0], b1[1], b1[2]], [b1[0], b1[1] + wallH, b1[2]], [a1[0], a1[1] + wallH, a1[2]], mul(wcol, 0.92), -nx, 0, -nz);
+            gb.quadOut([a0[0], a0[1] + wallH, a0[2]], [b0[0], b0[1] + wallH, b0[2]], [b1[0], b1[1] + wallH, b1[2]], [a1[0], a1[1] + wallH, a1[2]], mul(wcol, 1.05), 0, 1, 0);
+            if (!hw) {
+              const mx = (a1[0] + a0[0]) / 2, mz = (a1[2] + a0[2]) / 2;
+              solidBox(gb, mx - 0.008, a0[1] + wallH, mz - 0.008, mx + 0.008, a0[1] + wallH + 0.07, mz + 0.008, [0.3, 0.33, 0.38]);
+              const ex = (b1[0] + b0[0]) / 2, ez = (b1[2] + b0[2]) / 2, rt = 0.006;
+              gb.quadOut([mx, a0[1] + wallH + 0.07, mz], [ex, b0[1] + wallH + 0.07, ez], [ex, b0[1] + wallH + 0.07 + rt * 2, ez], [mx, a0[1] + wallH + 0.07 + rt * 2, mz], [0.3, 0.33, 0.38], nx, 0, nz);
+              gb.quadOut([mx, a0[1] + wallH + 0.07 + rt * 2, mz], [ex, b0[1] + wallH + 0.07 + rt * 2, ez], [ex + iu * 0.6, b0[1] + wallH + 0.07 + rt * 2, ez + iv * 0.6], [mx + iu * 0.6, a0[1] + wallH + 0.07 + rt * 2, mz + iv * 0.6], [0.4, 0.43, 0.48], 0, 1, 0);
+            }
+          }
+        }
       }
     }
     if (gb.empty) return;
@@ -3746,21 +3856,101 @@ const R3 = (function () {
     roadMeshes[ci] = m; scene.add(m);
   }
 
+
+  /* ---------- estrutura das pontes: pilares, encontros nas margens e, nos vãos longos, arco ou estais ---------- */
+  // viga reta de seção retangular entre dois pontos quaisquer
+  function beam(gb, a, b, w, h, col) {
+    const dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2], L = Math.hypot(dx, dy, dz) || 1, d = [dx / L, dy / L, dz / L];
+    let lx = -d[2], lz = d[0]; const ll = Math.hypot(lx, lz); if (ll < 1e-4) { lx = 1; lz = 0; } else { lx /= ll; lz /= ll; }
+    const l = [lx, 0, lz], u = [l[1] * d[2] - l[2] * d[1], l[2] * d[0] - l[0] * d[2], l[0] * d[1] - l[1] * d[0]], hw = w / 2, hh = h / 2;
+    const P = (p, sl, su) => [p[0] + l[0] * sl + u[0] * su, p[1] + l[1] * sl + u[1] * su, p[2] + l[2] * sl + u[2] * su];
+    const a00 = P(a, -hw, -hh), a10 = P(a, hw, -hh), a11 = P(a, hw, hh), a01 = P(a, -hw, hh), b00 = P(b, -hw, -hh), b10 = P(b, hw, -hh), b11 = P(b, hw, hh), b01 = P(b, -hw, hh);
+    gb.quadOut(a10, b10, b11, a11, col, l[0], l[1], l[2]); gb.quadOut(a00, a01, b01, b00, col, -l[0], -l[1], -l[2]);
+    gb.quadOut(a01, a11, b11, b01, col, u[0], u[1], u[2]); gb.quadOut(a00, b00, b10, a10, col, -u[0], -u[1], -u[2]);
+  }
+  let bridgeMesh = null;
+  function rebuildBridges() {
+    if (bridgeMesh) { scene.remove(bridgeMesh); bridgeMesh.geometry.dispose(); bridgeMesh = null; }
+    if (!city) return;
+    const gb = new GeoBuilder(), CON = [0.74, 0.74, 0.72], CONd = [0.62, 0.62, 0.6], BOT = -0.26, SL = 0.085;
+    const conn = (i, j) => city.roadConn(i, j);
+    const links = i => { const x = i % W, z = (i / W) | 0; return { L: x > 0 && conn(i, i - 1), R: x < W - 1 && conn(i, i + 1), U: z > 0 && conn(i, i - W), D: z < H - 1 && conn(i, i + W) }; };
+    for (let i = 0; i < N; i++) {
+      if (!isDeck(i)) continue;
+      const x = i % W, z = (i / W) | 0, cx = x - HW + 0.5, cz = z - HH + 0.5, { L, R, U, D } = links(i);
+      const horiz = (L || R) && !U && !D, vert = (U || D) && !L && !R, wide = city.road[i] !== 1;
+      // encontro: bloco de concreto na margem, segurando a ponta do tabuleiro
+      for (const [dx, dz, has] of [[-1, 0, L], [1, 0, R], [0, -1, U], [0, 1, D]]) {
+        if (!has) continue; const j = i + dx + dz * W; if (isDeck(j)) continue;
+        const ex = cx + dx * 0.5, ez = cz + dz * 0.5, yTop = surfY(i, 0.5 + dx * 0.5, 0.5 + dz * 0.5) - SL + 0.01;
+        if (dx) solidBox(gb, Math.min(ex, ex - dx * 0.1), BOT, cz - 0.5, Math.max(ex, ex - dx * 0.1), yTop, cz + 0.5, CONd);
+        else solidBox(gb, cx - 0.5, BOT, Math.min(ez, ez - dz * 0.1), cx + 0.5, yTop, Math.max(ez, ez - dz * 0.1), CONd);
+      }
+      // pilares: um apoio a cada duas quadras nos trechos retos, e em toda curva ou cruzamento
+      const pier = horiz ? x % 2 === 0 : vert ? z % 2 === 0 : true; if (!pier) continue;
+      const yTop = deckY(i, 0.5, 0.5) - SL, offs = wide ? [-0.32, 0, 0.32] : [-0.26, 0.26];
+      for (const o of offs) cylinder(gb, cx + (horiz ? 0 : o), cz + (horiz ? o : 0), wide ? 0.055 : 0.05, BOT, yTop - 0.05, 8, CON);
+      if (horiz) solidBox(gb, cx - 0.07, yTop - 0.06, cz - 0.44, cx + 0.07, yTop, cz + 0.44, CON);
+      else solidBox(gb, cx - 0.44, yTop - 0.06, cz - 0.07, cx + 0.44, yTop, cz + 0.07, CON);
+    }
+    // vãos longos (trechos retos sobre a água): arco de aço ou ponte estaiada
+    const straightDeck = (i, horiz) => { if (!isDeck(i)) return false; const k = links(i); return horiz ? (k.L || k.R) && !k.U && !k.D : (k.U || k.D) && !k.L && !k.R; };
+    const runs = [];
+    for (const horiz of [true, false]) for (let a = 0; a < H; a++) {
+      let start = -1;
+      for (let b = 0; b <= W; b++) {
+        const i = b < W ? (horiz ? a * W + b : b * W + a) : -1, on = i >= 0 && straightDeck(i, horiz), linked = on && start >= 0 && conn(i, horiz ? i - 1 : i - W);
+        if (start >= 0 && !linked) { if (b - start >= 4) runs.push({ horiz, a, b0: start, b1: b - 1 }); start = -1; }
+        if (on && start < 0) start = b;
+      }
+    }
+    for (const run of runs) {
+      const n = run.b1 - run.b0 + 1, h0 = Sim.hash2(run.a * 31 + run.b0, run.b1 * 17, 77), type = city.road[run.horiz ? run.a * W + run.b0 : run.b0 * W + run.a];
+      const wp = (s, lat) => { // ponto no tabuleiro: s = distância ao longo do vão (0..n), lat = deslocamento lateral
+        const b = run.b0 + Math.min(n - 1e-4, Math.max(0, s)), bi = Math.floor(b), t = b - bi, i = run.horiz ? run.a * W + bi : bi * W + run.a;
+        const u = run.horiz ? t : 0.5 + lat, v = run.horiz ? 0.5 + lat : t, y = deckY(i, u, v);
+        return run.horiz ? [run.b0 - HW + s, y, run.a - HH + 0.5 + lat] : [run.a - HW + 0.5 + lat, y, run.b0 - HH + s];
+      };
+      const side = type === 3 ? 0.49 : 0.47;
+      if ((n >= 7 && h0 < 0.5) || (n >= 5 && window.__bridgeStyle === 'cable')) {   // estaiada: pórtico em H no meio e cabos em leque até as beiradas
+        const mid = n / 2, top = Math.min(1.7, 1.0 + 0.06 * n), MAST = [0.88, 0.88, 0.86], CAB = [0.94, 0.94, 0.96];
+        for (const sg of [-1, 1]) { const p = wp(mid, sg * side); beam(gb, [p[0], p[1] - SL - 0.02, p[2]], [p[0], p[1] + top, p[2]], 0.07, 0.07, MAST); }
+        const pa = wp(mid, -side), pb = wp(mid, side);
+        beam(gb, [pa[0], pa[1] + top * 0.82, pa[2]], [pb[0], pb[1] + top * 0.82, pb[2]], 0.06, 0.06, MAST); beam(gb, [pa[0], pa[1] + top * 0.42, pa[2]], [pb[0], pb[1] + top * 0.42, pb[2]], 0.05, 0.05, MAST);
+        for (const sg of [-1, 1]) for (const dir of [-1, 1]) for (let k = 1, nk = Math.floor(mid / 0.5); k <= nk; k++) {
+          const s2 = mid + dir * k * 0.5; if (s2 < 0.3 || s2 > n - 0.3) continue;
+          const m = wp(mid, sg * side), an = wp(s2, sg * side), ht = top * (0.58 + 0.38 * (k / nk));
+          beam(gb, [m[0], m[1] + ht, m[2]], [an[0], an[1] + 0.06, an[2]], 0.012, 0.012, CAB);
+        }
+      } else {   // arco: dois arcos parabólicos por fora da pista, pendurais e travessas no alto
+        const H2 = Math.min(1.15, 0.24 + 0.09 * n), COL = h0 < 0.75 ? [0.93, 0.93, 0.95] : [0.82, 0.27, 0.22], K = n * 5;
+        const arc = (s, lat) => { const p = wp(s, lat), e = wp(0.02, lat), f = wp(n - 0.02, lat), base = e[1] + (f[1] - e[1]) * s / n, q = 2 * s / n - 1; return [p[0], Math.max(p[1] + 0.06, base + 0.03 + H2 * (1 - q * q)), p[2]]; };
+        for (const sg of [-1, 1]) {
+          for (let k = 0; k < K; k++) beam(gb, arc(k / K * n, sg * side), arc((k + 1) / K * n, sg * side), 0.06, 0.07, COL);
+          for (let s2 = 0.5; s2 < n - 0.4; s2 += 0.5) { const t = arc(s2, sg * side), d = wp(s2, sg * side); if (t[1] - d[1] > 0.12) beam(gb, [d[0], d[1] + 0.06, d[2]], [t[0], t[1] - 0.03, t[2]], 0.012, 0.012, [0.9, 0.9, 0.92]); }
+        }
+        for (let s2 = n * 0.2; s2 <= n * 0.8 + 1e-3; s2 += Math.max(0.5, n * 0.15)) { const a2 = arc(s2, -side), b2 = arc(s2, side); if (a2[1] - wp(s2, 0)[1] > 0.45) beam(gb, a2, b2, 0.04, 0.04, COL); }
+      }
+    }
+    if (gb.empty) return;
+    bridgeMesh = new THREE.Mesh(gb.build(), roadMat); bridgeMesh.castShadow = true; bridgeMesh.receiveShadow = true; scene.add(bridgeMesh);
+  }
   function rebuildLamps() {
     let n = 0;
     const rd = city.road;
     for (const [k, list] of obstacles) { const f = list.filter(o => o.t !== 'lamp'); if (f.length) obstacles.set(k, f); else obstacles.delete(k); }
     for (let z = 0; z < H && n < 2500; z++) for (let x = 0; x < W && n < 2500; x++) {
-      const i = z * W + x; if (!rd[i] || rd[i] === 3 || (x + z) % 2) continue;
+      const i = z * W + x; if (!rd[i] || (rd[i] === 3 ? (x + z) % 3 : (x + z) % 2)) continue;
       const L = x > 0 && city.roadConn(i, i - 1), R = x < W - 1 && city.roadConn(i, i + 1), U = z > 0 && city.roadConn(i, i - W), D = z < H - 1 && city.roadConn(i, i + W);
       let lx, lz;
-      if (!U) { lx = 0.5; lz = 0.065; } else if (!L) { lx = 0.065; lz = 0.5; } else if (!D) { lx = 0.5; lz = 0.935; } else if (!R) { lx = 0.935; lz = 0.5; } else continue;
+      if (rd[i] === 3) { const alt = Math.floor((x + z) / 3) % 2; if (!U && !D) { lx = 0.5; lz = alt ? 0.06 : 0.94; } else if (!L && !R) { lz = 0.5; lx = alt ? 0.06 : 0.94; } else continue; }
+      else if (!U) { lx = 0.5; lz = 0.065; } else if (!L) { lx = 0.065; lz = 0.5; } else if (!D) { lx = 0.5; lz = 0.935; } else if (!R) { lx = 0.935; lz = 0.5; } else continue;
       const y = surfY(i, lx, lz) + 0.045;
       addObstacle(i, x - HW + lx, z - HH + lz, 0.04, 'lamp');
       dummy.position.set(x - HW + lx, y + 0.21, z - HH + lz); dummy.rotation.set(0, 0, 0); dummy.scale.set(1, 1, 1); dummy.updateMatrix(); lampPost.setMatrixAt(n, dummy.matrix);
       dummy.position.set(x - HW + lx, y + 0.43, z - HH + lz); dummy.updateMatrix(); lampHead.setMatrixAt(n, dummy.matrix);
       { // o clarão no chão acompanha a rampa e encolhe na beira de barrancos, para não virar uma placa solta no ar
-        const ramp = rampMaskC(i), ox = lx < 0.2 ? -1 : lx > 0.8 ? 1 : 0, oz = lz < 0.2 ? -1 : lz > 0.8 ? 1 : 0, j = i + ox + oz * W;
+        const ramp = rampMaskC(i) || isDeck(i), ox = lx < 0.2 ? -1 : lx > 0.8 ? 1 : 0, oz = lz < 0.2 ? -1 : lz > 0.8 ? 1 : 0, j = i + ox + oz * W;
         const cliff = (x + ox < 0 || x + ox >= W || z + oz < 0 || z + oz >= H) || city.height[j] !== city.height[i] || city.terrain[j] === T.WATER;
         const gs = ramp ? 0.5 : cliff ? 0.3 : 1;
         dummy.position.set(x - HW + lx - ox * (ramp || cliff ? 0.12 : 0), y + 0.012, z - HH + lz - oz * (ramp || cliff ? 0.12 : 0));
@@ -3964,10 +4154,10 @@ const R3 = (function () {
   function shipRoute(ox, oz, hx, hz) {
     const wat = (x, z) => x >= 0 && z >= 0 && x < W && z < H && city.terrain[z * W + x] === Sim.T.WATER;
     const sx = Math.floor(ox + HW), sz = Math.floor(oz + HH); if (!wat(sx, sz)) return null;
-    for (const clear of [2, 1, 0]) {
+    for (const [clear, nbr] of [[2, 1], [1, 1], [0, 1], [2, 0], [1, 0], [0, 0]]) {
       const ok = (x, z) => { for (let dz = -clear; dz <= clear; dz++) for (let dx = -clear; dx <= clear; dx++) { const xx = x + dx, zz = z + dz; if (xx < 0 || zz < 0 || xx >= W || zz >= H) continue; if (city.terrain[zz * W + xx] !== Sim.T.WATER) return false; } return true; };
       const par = new Int32Array(N).fill(-2), q = [sz * W + sx]; par[q[0]] = -1; let end = -1;
-      for (let h = 0; h < q.length && end < 0; h++) { const t = q[h], x = t % W, z = (t / W) | 0; if ((x === 0 || z === 0 || x === W - 1 || z === H - 1) && h > 0) { end = t; break; } for (const [dx, dz] of NB4) { const xx = x + dx, zz = z + dz; if (!wat(xx, zz)) continue; const j = zz * W + xx; if (par[j] !== -2 || (!ok(xx, zz) && Math.abs(xx - sx) + Math.abs(zz - sz) > clear + 1)) continue; par[j] = t; q.push(j); } }
+      for (let h = 0; h < q.length && end < 0; h++) { const t = q[h], x = t % W, z = (t / W) | 0; if ((x === 0 || z === 0 || x === W - 1 || z === H - 1) && h > 0) { end = t; break; } for (const [dx, dz] of NB4) { const xx = x + dx, zz = z + dz; if (!wat(xx, zz) || (nbr && city.road[zz * W + xx])) continue; const j = zz * W + xx; if (par[j] !== -2 || (!ok(xx, zz) && Math.abs(xx - sx) + Math.abs(zz - sz) > clear + 1)) continue; par[j] = t; q.push(j); } }
       if (end < 0) continue;
       let pts = []; for (let t = end; t >= 0; t = par[t]) pts.push([(t % W) - HW + 0.5, ((t / W) | 0) - HH + 0.5]); pts.reverse(); pts[0] = [ox, oz];
       // sai do mapa em linha reta e some lá fora
@@ -4801,7 +4991,7 @@ const R3 = (function () {
     const a = c.path[c.seg], b = c.path[c.seg + 1];
     const ax = a % W - HW + 0.5, az = ((a / W) | 0) - HH + 0.5, bx = b % W - HW + 0.5, bz = ((b / W) | 0) - HH + 0.5;
     const dx = bx - ax, dz = bz - az;
-    const ramp = rampMaskC(a) || rampMaskC(b), yc = ramp ? 0 : roadY(a, b, c.t);
+    const ramp = rampMaskC(a) || rampMaskC(b) || isDeck(a) || isDeck(b), yc = ramp ? 0 : roadY(a, b, c.t);
     const yAt = (x, z) => { const i = tileIndexAt(x, z); return i >= 0 && city.road[i] ? surfY(i, x + HW - (i % W), z + HH - ((i / W) | 0)) : roadY(a, b, c.t); };
     const fin = (x, z, rot) => {
       if (!ramp) return { x, y: yc, z, rot, pitch: 0 };
@@ -6105,7 +6295,7 @@ const R3 = (function () {
     const d = city.dirty;
     if (d.terrain) { buildTerrain(); rebuildFog(); d.terrain = false; d.fog = false; }
     if (d.fog) { rebuildFog(); d.fog = false; }
-    if (d.roads.size) { rampCache = null; connCache = null; junctionCache = null; signalCache = null; sigArms.clear(); sigCtl.clear(); pedWant.clear(); for (const ci of d.roads) rebuildRoadChunk(ci); d.roads.clear(); }
+    if (d.roads.size) { rampCache = null; deckCache = null; connCache = null; junctionCache = null; signalCache = null; sigArms.clear(); sigCtl.clear(); pedWant.clear(); for (const ci of d.roads) rebuildRoadChunk(ci); d.roads.clear(); rebuildBridges(); rebuildHighwaySigns(); }
     if (d.lamps) { rebuildLamps(); d.lamps = false; lists = null; }
     if (d.zones) { rebuildZones(); d.zones = false; }
     if (d.trees) { rebuildTrees(); d.trees = false; }
@@ -6291,7 +6481,7 @@ const Snd = (function () {
 (function () {
   'use strict';
   const $ = s => document.querySelector(s);
-  const APP_VERSION = {"v":36,"date":"2026-11-16","notes":["Ampliações com efeito: construções iguais, encostadas e alinhadas viram um complexo com mais alcance, atendimento mais forte, manutenção mais barata e, nas usinas e caixas d'água, mais produção.","Agora também ampliam: parques (com lago e coreto), praças, jardins, playgrounds, fontes, pontos de ônibus (terminal), caixas d'água (estação de água), usinas solares (fazenda solar), metrô, aterro, reciclagem, eólicas e termelétricas.","Ao construir encostado em outra igual, a prévia mostra o complexo que vai se formar e o alcance novo.","Tela de entrada e número da versão no jogo (aqui e no Menu)."]};
+  const APP_VERSION = {"v":37,"date":"2026-11-16","notes":["Pontes de verdade: o tabuleiro sobe a partir da margem, com pilares na água, encontros de concreto, mureta e corrimão.","Pontes longas ganham estrutura: arco de aço (branco ou vermelho) com pendurais, ou ponte estaiada com pórtico e cabos.","Carros e pedestres sobem e descem acompanhando a ponte; navios desviam das pontes quando há outro caminho.","Rodovia nova: asfalto escuro, acostamento, faixas brancas de bordo, eixo amarelo (duplo perto dos acessos) com tachas, defensa metálica e postes a cada três quadras.","Placa verde de boas-vindas com o nome da sua cidade na entrada e pórtico \"CENTRO\" antes do primeiro acesso.","Da versão 36: ampliações com efeito (alcance, atendimento, manutenção e produção) e tela de entrada."]};
   const VER = (typeof APP_VERSION !== 'undefined' && APP_VERSION) || { v: 0, date: '', notes: [] };
   const verDate = () => { const p = String(VER.date || '').split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : ''; };
   const { City, DEFS, HAND, TERRA, ROADS, ISSUE_TIPS, ZONE_NAMES, LEVEL_NAMES, ZSTAT, MISSIONS, ACHIEVEMENTS, SCENARIOS, T, Z, W, H, PARCEL, PX } = Sim;
