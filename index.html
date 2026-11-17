@@ -582,6 +582,8 @@ const Sim = (function () {
       this.height = new Int8Array(N);
       this.zone = new Uint8Array(N);
       this.road = new Uint8Array(N);
+      // ruas desenhadas em curva: número do traçado em cada quadra (0 = rua comum, reta) e os traçados desenhados
+      this.curveOf = new Uint16Array(N); this.curves = new Map(); this.nextCurve = 1;
       this.bld = new Int32Array(N).fill(-1);
       this.pollution = new Float32Array(N);
       this.landValue = new Float32Array(N);
@@ -835,6 +837,15 @@ const Sim = (function () {
       return { ok: true, bridge };
     }
 
+    // guarda o traçado de uma rua desenhada em curva (ou reta inclinada) nas quadras que ela ocupa
+    // rec: { ax, az, bx, bz, shape: 'curve' | 'diag', sx: sai de A no sentido x }
+    markCurve(tiles, rec) {
+      const id = this.nextCurve++; if (this.nextCurve > 65000) this.nextCurve = 1;
+      this.curves.set(id, { ax: rec.ax, az: rec.az, bx: rec.bx, bz: rec.bz, shape: rec.shape === 'diag' ? 'diag' : 'curve', sx: rec.sx !== false });
+      for (const t of tiles) { if (!this.inb(t.x, t.z)) continue; const i = this.idx(t.x, t.z); if (this.road[i] && this.road[i] !== 3) { this.curveOf[i] = id; this.markRoad(t.x, t.z); } }
+      return id;
+    }
+
     setZone(x, z, zk) {
       if (!this.inb(x, z)) return { ok: false };
       const i = this.idx(x, z);
@@ -867,7 +878,7 @@ const Sim = (function () {
         if (this.road[i] === 3) return { ok: false, reason: 'A rodovia é do estado: não pode ser demolida.' };
         if (this.money < DEFS.bulldoze.cost) return { ok: false, reason: 'Dinheiro insuficiente.' };
         this.money -= DEFS.bulldoze.cost;
-        this.road[i] = 0; this.markRoad(x, z); this.dirty.buildings = true;
+        this.road[i] = 0; this.curveOf[i] = 0; this.markRoad(x, z); this.dirty.buildings = true;
         return { ok: true, what: 'road' };
       }
       if (this.zone[i]) { this.zone[i] = 0; this.dirty.zones = true; return { ok: true, what: 'zone' }; }
@@ -1637,11 +1648,17 @@ const Sim = (function () {
         terrain: enc(this.terrain), height: enc(this.height), zone: enc(this.zone), road: enc(this.road), owned: enc(this.owned),
         buildings: this.buildings.map(b => [b.id, b.kind, b.x, b.z, b.size, b.level, Math.round(b.occ * 1000) / 1000, Math.round(b.happy), b.age, b.abandoned ? 1 : 0, b.badMonths, b.seed, b.rot | 0, b.h | 0, b.burning ? 1 : 0, b.fireMonths | 0, b.hand ? 1 : 0, b.cons | 0, b.w | 0, b.d | 0]),
         milestones: this.milestones.slice(), loans: this.loans.map(l => ({ ...l })), demand: { ...this.demand },
-        flags: { ...this.flags }, cits: this.citsSave || undefined, policies: { ...this.policies }, history: this.history.slice(-120), missionIdx: this.missionIdx, achievements: this.achievements.slice(), counters: { ...this.counters },
+        flags: { ...this.flags }, cits: this.citsSave || undefined, ...this.curveSave(), policies: { ...this.policies }, history: this.history.slice(-120), missionIdx: this.missionIdx, achievements: this.achievements.slice(), counters: { ...this.counters },
         log: this.log.slice(-40), view: view || null, savedAt: Date.now(),
       };
     }
 
+    curveSave() {
+      const used = new Set(), tiles = [];
+      for (let i = 0; i < N; i++) { const id = this.curveOf[i]; if (id && this.road[i] && this.curves.has(id)) { used.add(id); tiles.push(i, id); } }
+      if (!tiles.length) return {};
+      return { curveTiles: tiles, curves: [...used].map(id => { const r = this.curves.get(id); return [id, r.ax, r.az, r.bx, r.bz, r.shape === 'diag' ? 1 : 0, r.sx ? 1 : 0]; }) };
+    }
     static deserialize(data) {
       if (!data) throw new Error('Arquivo de cidade inválido.');
       if (data.v === 1) data = City.migrateV1(data);
@@ -1662,6 +1679,8 @@ const Sim = (function () {
       c.citsSave = Array.isArray(data.cits) ? data.cits : null; c.flags = Object.assign(c.flags, data.flags || {}); c.policies = data.policies || {}; c.history = data.history || [];
       c.missionIdx = data.missionIdx || 0; c.achievements = data.achievements || []; c.counters = Object.assign(c.counters, data.counters || {});
       c.log = data.log || [];
+      if (Array.isArray(data.curves)) for (const r of data.curves) { c.curves.set(r[0], { ax: r[1], az: r[2], bx: r[3], bz: r[4], shape: r[5] ? 'diag' : 'curve', sx: !!r[6] }); if (r[0] >= c.nextCurve) c.nextCurve = r[0] + 1; }
+      if (Array.isArray(data.curveTiles)) for (let k = 0; k + 1 < data.curveTiles.length; k += 2) { const i = data.curveTiles[k], id = data.curveTiles[k + 1]; if (i >= 0 && i < N && c.curves.has(id) && c.road[i]) c.curveOf[i] = id; }
       c.ensureHighway();
       c.roadNearDirty = true; c.recomputeRoadNear();
       c.recomputeCoverage();
@@ -3593,8 +3612,8 @@ const R3 = (function () {
     for (const [, list] of rides) for (const it of list) scene.remove(it.obj); rides.clear(); if (amb) { amb.lastYear = -1; amb.fw.shows.length = 0; for (const bt of amb.boats) bt.on = false; }
     agents.length = 0; cits.length = 0; homeCnt.clear(); followId = -1; carsSeeded = false; slotMap.clear(); smoke.length = 0; peds.length = 0; matches.clear(); sparks.length = 0; lists = null; fireSent.clear(); obstacles.clear(); setGhost(null); setCoverage(null); setTiles(null);
     buildTerrain(); rebuildFog(); rebuildZones(); rebuildTrees();
-    rampCache = null; deckCache = null; connCache = null; ribCache = null; junctionCache = null; signalCache = null; sigArms.clear(); sigCtl.clear(); pedWant.clear();
-    ribSig = new Map(); refreshRibbons(new Set());
+    rampCache = null; deckCache = null; connCache = null; ribCache = null; junctionCache = null; signalCache = null; sideCache = null; sigArms.clear(); sigCtl.clear(); pedWant.clear();
+    ribSig = new Map(); curveSamp = new Map(); refreshRibbons(new Set());
     for (let i = 0; i < CX * CX; i++) { rebuildChunk(i); rebuildRoadChunk(i); }
     rebuildBridges(); rebuildHighwaySigns(); rebuildLamps(); syncTurbines(); syncHubs(); syncRides(); rebuildEmitters();
     const d = city.dirty; d.terrain = d.trees = d.zones = d.buildings = d.fog = d.lamps = false; d.chunks.clear(); d.roads.clear();
@@ -3714,24 +3733,54 @@ const R3 = (function () {
   function connMaskC(i) {
     if (!connCache) connCache = new Int8Array(N).fill(-1);
     let m = connCache[i];
-    if (m < 0) { const x = i % W, z = (i / W) | 0; m = 0; if (x < W - 1 && city.roadConn(i, i + 1)) m |= 1; if (x > 0 && city.roadConn(i, i - 1)) m |= 2; if (z < H - 1 && city.roadConn(i, i + W)) m |= 4; if (z > 0 && city.roadConn(i, i - W)) m |= 8; connCache[i] = m; }
+    if (m < 0) { const x = i % W, z = (i / W) | 0; m = 0; if (x < W - 1 && vConn(i, i + 1)) m |= 1; if (x > 0 && vConn(i, i - 1)) m |= 2; if (z < H - 1 && vConn(i, i + W)) m |= 4; if (z > 0 && vConn(i, i - W)) m |= 8; connCache[i] = m; }
     return m;
   }
 
-  /* ---------- ruas em curva: trechos sem cruzamento viram uma faixa suave (curvas, diagonais e esquinas arredondadas) ---------- */
-  // cada trecho é refeito a partir das quadras: degraus viram diagonal, curva desenhada vira arco, esquina isolada vira canto redondo
+  /* ---------- ruas em curva: só as ruas desenhadas com a ferramenta de curva (ou reta inclinada) ---------- */
+  // o resto da cidade continua com o desenho de sempre (ruas retas, esquinas em ângulo reto)
   const RIB_M = 10;
-  let ribCache = null, ribSig = new Map();
+  let ribCache = null, ribSig = new Map(), curveSamp = new Map();
   const tcx = i => (i % W) - HW + 0.5, tcz = i => ((i / W) | 0) - HH + 0.5;
   function ribDeg(i) { const m = connMaskC(i); return (m & 1 ? 1 : 0) + (m & 2 ? 1 : 0) + (m & 4 ? 1 : 0) + (m & 8 ? 1 : 0); }
-  function ribEligible(i) { const t = city.road[i]; return (t === 1 || t === 2) && city.terrain[i] !== T.WATER && !rampMaskC(i) && ribDeg(i) === 2; }
+  function ribEligible(i) { const t = city.road[i]; return (t === 1 || t === 2) && !!(city.curveOf && city.curveOf[i]) && (city.terrain[i] === T.WATER || !rampMaskC(i)) && ribDeg(i) === 2; }
   function ribNbrs(i) { const m = connMaskC(i), o = []; if (m & 1) o.push(i + 1); if (m & 2) o.push(i - 1); if (m & 4) o.push(i + W); if (m & 8) o.push(i - W); return o; }
   const ribPiece = i => { if (!ribCache) buildRibbons(); return ribCache.get(i); };
+  // traçado desenhado (em coordenadas do mundo), amostrado fino
+  function curveSamples(id) {
+    let sm = curveSamp.get(id); if (sm) return sm;
+    const r = city.curves && city.curves.get(id); if (!r) return null;
+    const K = Math.max(24, Math.ceil((Math.abs(r.bx - r.ax) + Math.abs(r.bz - r.az)) * 12)), pts = [];
+    for (let k = 0; k <= K; k++) {
+      const f = k / K; let x, z;
+      if (r.shape === 'diag') { x = r.ax + (r.bx - r.ax) * f; z = r.az + (r.bz - r.az) * f; }
+      else { const a = f * Math.PI / 2; if (r.sx) { x = r.ax + (r.bx - r.ax) * Math.sin(a); z = r.bz + (r.az - r.bz) * Math.cos(a); } else { x = r.bx + (r.ax - r.bx) * Math.cos(a); z = r.az + (r.bz - r.az) * Math.sin(a); } }
+      pts.push([x - HW + 0.5, z - HH + 0.5]);
+    }
+    curveSamp.set(id, pts); return pts;
+  }
+  // onde o traçado cruza a borda entre duas quadras (e em que direção)
+  function curveCross(id, p) {
+    const pts = curveSamples(id); if (!pts) return null;
+    let best = null, bd = 1e9;
+    for (let k = 0; k < pts.length - 1; k++) {
+      const [x0, z0] = pts[k], [x1, z1] = pts[k + 1];
+      let t;
+      if (p.dx) { if ((x0 - p.mx) * (x1 - p.mx) > 0 || x0 === x1) continue; t = (p.mx - x0) / (x1 - x0); }
+      else { if ((z0 - p.mz) * (z1 - p.mz) > 0 || z0 === z1) continue; t = (p.mz - z0) / (z1 - z0); }
+      const x = x0 + (x1 - x0) * t, z = z0 + (z1 - z0) * t, d = Math.hypot(x - p.mx, z - p.mz);
+      if (d < bd) { bd = d; const l = Math.hypot(x1 - x0, z1 - z0) || 1; best = { x, z, tx: (x1 - x0) / l, tz: (z1 - z0) / l }; }
+    }
+    if (!best || bd > 0.75) return null;
+    if (best.tx * p.dx + best.tz * p.dz < 0) { best.tx = -best.tx; best.tz = -best.tz; }
+    return best;
+  }
   function buildRibbons() {
     ribCache = new Map();
+    if (!city.curveOf) return;
     const seen = new Uint8Array(N), rd = city.road;
     for (let i0 = 0; i0 < N; i0++) {
-      if (seen[i0] || !rd[i0] || !ribEligible(i0)) continue;
+      if (seen[i0] || !rd[i0] || !city.curveOf[i0] || !ribEligible(i0)) continue;
       const typ = rd[i0], member = j => j >= 0 && ribEligible(j) && rd[j] === typ;
       const walk = (from, to) => { const out = []; let p = from, c = to, g = 0; while (member(c) && c !== i0 && g++ < 5000) { out.push(c); const ns = ribNbrs(c), nx = ns[0] === p ? ns[1] : ns[0]; p = c; c = nx; } return { tiles: out, anchor: c, loop: c === i0 }; };
       const ns = ribNbrs(i0), back = walk(i0, ns[0]);
@@ -3746,38 +3795,34 @@ const R3 = (function () {
     const n = T0.length, seq = [A].concat(T0, [B]), P = [];
     for (let k = 0; k <= n; k++) { const a = seq[k], b = seq[k + 1], dx = (b % W) - (a % W), dz = ((b / W) | 0) - ((a / W) | 0); P.push({ mx: (tcx(a) + tcx(b)) / 2, mz: (tcz(a) + tcz(b)) / 2, dx, dz, lock: k === 0 || k === n }); }
     const straight = T0.map((t, k) => P[k].dx === P[k + 1].dx && P[k].dz === P[k + 1].dz);
-    // trechos retos de 3 quadras ou mais travam a direção: a esquina continua fechada, como numa quadra comum
-    for (let k = 0; k < n;) { if (!straight[k]) { k++; continue; } let e = k; while (e < n && straight[e]) e++; if (e - k >= 3) for (let q = k; q <= e; q++) P[q].lock = true; k = e; }
-    // degraus (2 ou mais esquinas seguidas) entre trechos retos: a transição começa uma quadra antes, para a curva não ficar apertada
-    for (let k = 0; k < n;) { if (straight[k]) { k++; continue; } let e = k; while (e < n && !straight[e]) e++; if (e - k >= 2) { if (k > 0) P[k].lock = false; if (e < n) P[e].lock = false; } k = e; }
-    // suaviza o caminho pelos meios das bordas (núcleo 1-2-3-2-1: some com o serrilhado das diagonais) e acha a direção em cada borda
+    // reserva: caminho suavizado pelos meios das bordas (quando o traçado não serve)
     const KW = [1, 2, 3, 2, 1]; let SX = P.map(p => p.mx), SZ = P.map(p => p.mz);
-    for (let pass = 0; pass < 2; pass++) {
-      const NX = [], NZ = [];
-      for (let k = 0; k <= n; k++) {
-        if (P[k].lock) { NX.push(P[k].mx); NZ.push(P[k].mz); continue; }
-        let sx = 0, sz = 0, sw = 0; for (let j = -2; j <= 2; j++) { const q = k + j; if (q < 0 || q > n) continue; sx += SX[q] * KW[j + 2]; sz += SZ[q] * KW[j + 2]; sw += KW[j + 2]; }
-        NX.push(sx / sw); NZ.push(sz / sw);
-      }
-      SX = NX; SZ = NZ;
-    }
+    for (let pass = 0; pass < 2; pass++) { const NX = [], NZ = []; for (let k = 0; k <= n; k++) { if (P[k].lock) { NX.push(P[k].mx); NZ.push(P[k].mz); continue; } let sx = 0, sz = 0, sw = 0; for (let j = -2; j <= 2; j++) { const q = k + j; if (q < 0 || q > n) continue; sx += SX[q] * KW[j + 2]; sz += SZ[q] * KW[j + 2]; sw += KW[j + 2]; } NX.push(sx / sw); NZ.push(sz / sw); } SX = NX; SZ = NZ; }
+    const cid = j => (j >= 0 && city.curveOf ? city.curveOf[j] : 0);
     for (let k = 0; k <= n; k++) {
       const p = P[k]; p.tx = p.dx; p.tz = p.dz; p.x = p.mx; p.z = p.mz; p.w = 1;
       if (p.lock) continue;
-      let tx = SX[Math.min(n, k + 1)] - SX[Math.max(0, k - 1)], tz = SZ[Math.min(n, k + 1)] - SZ[Math.max(0, k - 1)]; const tl = Math.hypot(tx, tz) || 1; tx /= tl; tz /= tl;
+      // o traçado desenhado manda: ponto e direção exatos onde ele cruza a borda
+      const ia = cid(seq[k]), ib = cid(seq[k + 1]), ca = ia ? curveCross(ia, p) : null, cb = ib && ib !== ia ? curveCross(ib, p) : null;
+      let cr = ca && cb ? { x: (ca.x + cb.x) / 2, z: (ca.z + cb.z) / 2, tx: ca.tx + cb.tx, tz: ca.tz + cb.tz } : ca || cb;
+      let tx, tz;
+      if (cr) { tx = cr.tx; tz = cr.tz; if (p.dx) p.z = cr.z; else p.x = cr.x; }
+      else { tx = SX[Math.min(n, k + 1)] - SX[Math.max(0, k - 1)]; tz = SZ[Math.min(n, k + 1)] - SZ[Math.max(0, k - 1)]; }
+      const tl = Math.hypot(tx, tz) || 1; tx /= tl; tz /= tl;
       if (tx * p.dx + tz * p.dz < 0.574) { const px = -p.dz, pz = p.dx, sg = (tx * px + tz * pz) < 0 ? -1 : 1; tx = p.dx * 0.574 + px * 0.819 * sg; tz = p.dz * 0.574 + pz * 0.819 * sg; }
       p.tx = tx; p.tz = tz;
-      // posição: reta suavizada cortando a borda entre as duas quadras (desliza no máximo 0,32)
-      if (p.dx) p.z = clamp(SZ[k] + (p.mx - SX[k]) * tz / tx, p.mz - 0.32, p.mz + 0.32); else p.x = clamp(SX[k] + (p.mz - SZ[k]) * tx / tz, p.mx - 0.32, p.mx + 0.32);
+      if (!cr) { if (p.dx) p.z = SZ[k] + (p.mx - SX[k]) * tz / tx; else p.x = SX[k] + (p.mz - SZ[k]) * tx / tz; }
+      if (p.dx) p.z = clamp(p.z, p.mz - 0.36, p.mz + 0.36); else p.x = clamp(p.x, p.mx - 0.36, p.mx + 0.36);
       const s2 = Math.sin(2 * Math.atan2(tz, tx)); p.w = 1 - 0.14 * s2 * s2;
     }
+    // altura: em terra é a do terreno; na água o tabuleiro sobe e desce suave ao longo do traçado
+    const hc = j => (j < 0 ? 0 : isDeck(j) ? deckC(j) : city.height[j] * TH);
+    const PH = []; for (let k = 0; k <= n; k++) { const a = seq[k], b = seq[k + 1]; if (a >= 0 && b >= 0 && isDeck(a) && isDeck(b)) PH.push([(hc(a) + hc(b)) / 2, hc(b) - hc(a)]); else if (a >= 0 && isDeck(a) && b >= 0) PH.push([city.height[b] * TH, 0]); else if (b >= 0 && isDeck(b) && a >= 0) PH.push([city.height[a] * TH, 0]); else PH.push([hc(b >= 0 ? b : a), 0]); }
     let dist = 0;
     for (let k = 0; k < n; k++) {
       const a = P[k], b = P[k + 1], i = T0[k];
-      if (a.lock && b.lock && straight[k]) { dist += 1; continue; }
       const ch = Math.hypot(b.x - a.x, b.z - a.z), ang = Math.acos(clamp(a.tx * b.tx + a.tz * b.tz, -1, 1)), h = ch / 3 * 2 / (1 + Math.cos(ang / 2));
       const bz = (t, j) => { const m = 1 - t, p0 = j ? a.z : a.x, p1 = j ? a.z + a.tz * h : a.x + a.tx * h, p2 = j ? b.z - b.tz * h : b.x - b.tx * h, p3 = j ? b.z : b.x; return m * m * m * p0 + 3 * m * m * t * p1 + 3 * m * t * t * p2 + t * t * t * p3; };
-      // amostra fina e reamostra por comprimento (velocidade constante e meio exato da quadra)
       const F = 32, fx = [], fz = [], fc = [0];
       for (let q = 0; q <= F; q++) { fx.push(bz(q / F, 0)); fz.push(bz(q / F, 1)); if (q) fc.push(fc[q - 1] + Math.hypot(fx[q] - fx[q - 1], fz[q] - fz[q - 1])); }
       const L = fc[F], pts = [], tan = [], ws = [];
@@ -3788,15 +3833,24 @@ const R3 = (function () {
         pts.push([x, z]); tan.push([tx, tz]); ws.push(a.w + (b.w - a.w) * m / RIB_M);
       }
       tan[0] = [a.tx, a.tz]; tan[RIB_M] = [b.tx, b.tz];
-      // reta e centrada (pequena variação): fica no desenho antigo
-      if (straight[k]) { let dev = 0; const cx0 = tcx(i), cz0 = tcz(i); for (const [x, z] of pts) dev = Math.max(dev, P[k].dx ? Math.abs(z - cz0) : Math.abs(x - cx0)); if (dev < 0.012 && Math.abs(a.tx * b.tz - a.tz * b.tx) < 0.02 && Math.abs(a.tx * P[k].dz - a.tz * P[k].dx) < 0.02) { dist += 1; continue; } }
+      const deck = isDeck(i);
+      // reta, centrada e em terra: fica no desenho de sempre
+      if (straight[k] && !deck) { let dev = 0; const cx0 = tcx(i), cz0 = tcz(i); for (const [x, z] of pts) dev = Math.max(dev, P[k].dx ? Math.abs(z - cz0) : Math.abs(x - cx0)); if (dev < 0.012 && Math.abs(a.tx * b.tz - a.tz * b.tx) < 0.02 && Math.abs(a.tx * P[k].dz - a.tz * P[k].dx) < 0.02) { dist += 1; continue; } }
       const phi = t => Math.atan2(t[1], t[0]), dphi = (p, q) => { let d = phi(q) - phi(p); while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; }, mid = RIB_M >> 1;
       const kap = []; for (let m = 0; m <= RIB_M; m++) { const p0 = tan[Math.max(0, m - 1)], p1 = tan[Math.min(RIB_M, m + 1)], ds = L / RIB_M * (Math.min(RIB_M, m + 1) - Math.max(0, m - 1)); kap.push(dphi(p0, p1) / Math.max(1e-4, ds)); }
-      ribCache.set(i, { i, typ, prev: seq[k], next: seq[k + 2], pts, tan, w: ws, kap, len: L, dash: dist, lockA: a.lock, lockB: b.lock, corner: !straight[k], h1: { L: L / 2, dphi: dphi(tan[0], tan[mid]) }, h2: { L: L / 2, dphi: dphi(tan[mid], tan[RIB_M]) } });
+      const e0 = PH[k][0], e1 = PH[k + 1][0], yc = hc(i);
+      ribCache.set(i, { i, typ, deck, prev: seq[k], next: seq[k + 2], pts, tan, w: ws, kap, len: L, dash: dist, y0: city.height[i] * TH, e0, m0: PH[k][1], yc, mc: (e1 - e0) / Math.max(0.2, L), e1, m1: PH[k + 1][1],
+        h1: { L: L / 2, dphi: dphi(tan[0], tan[mid]) }, h2: { L: L / 2, dphi: dphi(tan[mid], tan[RIB_M]) } });
       dist += L;
     }
   }
-  // posição no meio-fio central da peça: s = 0..1 ao longo do comprimento (no sentido do trecho)
+  // altura da pista ao longo da peça (s = 0..1)
+  function ribY(pc, s) {
+    if (!pc.deck) return pc.y0;
+    s = clamp(s, 0, 1); const h = pc.len / 2;
+    return s < 0.5 ? hermite(pc.e0, pc.m0 * h, pc.yc, pc.mc * h, s * 2) : hermite(pc.yc, pc.mc * h, pc.e1, pc.m1 * h, s * 2 - 1);
+  }
+  // posição no eixo da peça: s = 0..1 ao longo do comprimento (no sentido do trecho)
   const RP = { x: 0, z: 0, tx: 0, tz: 0, w: 1 };
   function ribPoint(pc, s) {
     const f = clamp(s, 0, 1) * RIB_M, k = Math.min(RIB_M - 1, Math.floor(f)), t = f - k, a = pc.pts[k], b = pc.pts[k + 1], ta = pc.tan[k], tb = pc.tan[k + 1];
@@ -3818,41 +3872,41 @@ const R3 = (function () {
   }
   // refaz as peças e diz quais quadras mudaram (para redesenhar só os blocos afetados)
   function refreshRibbons(dirty) {
-    ribCache = null; buildRibbons();
+    ribCache = null; curveSamp = new Map(); buildRibbons();
     const now = new Map();
-    for (const [i, pc] of ribCache) { let h = pc.typ * 7.1; for (const p of pc.pts) h = (h * 31 + Math.round(p[0] * 500) * 3 + Math.round(p[1] * 500)) % 1e9; now.set(i, h); }
+    for (const [i, pc] of ribCache) { let h = pc.typ * 7.1 + (pc.deck ? 3 : 0); for (const p of pc.pts) h = (h * 31 + Math.round(p[0] * 500) * 3 + Math.round(p[1] * 500)) % 1e9; h = (h * 31 + Math.round(pc.yc * 1000)) % 1e9; now.set(i, h); }
     for (const [i, h] of now) if (ribSig.get(i) !== h) dirty.add(Math.floor(((i / W) | 0) / CHUNK) * CX + Math.floor((i % W) / CHUNK));
     for (const [i] of ribSig) if (!now.has(i)) dirty.add(Math.floor(((i / W) | 0) / CHUNK) * CX + Math.floor((i % W) / CHUNK));
     ribSig = now;
   }
-  // desenho da peça: asfalto, meio-fio, calçadas e sinalização acompanhando a curva
-  function drawRibbon(gb, pc, hy) {
-    const M = RIB_M, av = pc.typ === 2, A = av ? 0.42 : 0.4, S = av ? 0.08 : 0.1, ya = hy + 0.02, ys = hy + 0.045;
-    const ASP = [0.27, 0.28, 0.31], WALK = [0.6, 0.59, 0.56], CURB = [0.44, 0.44, 0.43], DASH = [0.95, 0.82, 0.35], WHITE = [0.85, 0.85, 0.85], GRASS = [0.33, 0.58, 0.3];
-    const at = (k, o, y) => { const p = pc.pts[k], t = pc.tan[k], w = pc.w[k], kk = pc.kap[k]; let ow = o * w; if (ow * kk > 0.92) ow = 0.92 / kk; return [p[0] - t[1] * ow, y, p[1] + t[0] * ow]; };
-    const band = (o0, o1, y, col, k0, k1) => { for (let k = k0 === undefined ? 0 : k0; k < (k1 === undefined ? M : k1); k++) pcQuad(gb, at(k, o0, y), at(k + 1, o0, y), at(k + 1, o1, y), at(k, o1, y), col); };
-    band(-A, A, ya, ASP);
-    band(A, A + S, ys, WALK); band(-A - S, -A, ys, WALK);
-    for (let k = 0; k < M; k++) {
+  // desenho da peça: asfalto, meio-fio, calçadas e sinalização acompanhando a curva (na água: tabuleiro de ponte)
+  function drawRibbon(gb, pc) {
+    const M = RIB_M, av = pc.typ === 2, A = av ? 0.42 : 0.4, S = av ? 0.08 : 0.1, deck = pc.deck;
+    const ASP = [0.27, 0.28, 0.31], WALK = [0.6, 0.59, 0.56], CURB = [0.44, 0.44, 0.43], DASH = [0.95, 0.82, 0.35], WHITE = [0.85, 0.85, 0.85], GRASS = [0.33, 0.58, 0.3], CON = [0.7, 0.7, 0.68], CONd = [0.5, 0.5, 0.5];
+    const ys = []; for (let k = 0; k <= M; k++) ys.push(ribY(pc, k / M));
+    const at = (k, o, dy) => { const p = pc.pts[k], t = pc.tan[k], w = pc.w[k], kk = pc.kap[k]; let ow = o * w; if (ow * kk > 0.92) ow = 0.92 / kk; return [p[0] - t[1] * ow, ys[k] + dy, p[1] + t[0] * ow]; };
+    const band = (o0, o1, dy, col, nrm) => { for (let k = 0; k < M; k++) gb.quadOut(at(k, o0, dy), at(k + 1, o0, dy), at(k + 1, o1, dy), at(k, o1, dy), col, 0, nrm || 1, 0); };
+    const wall = (o, dy0, dy1, col, sg) => { for (let k = 0; k < M; k++) { const t = pc.tan[k], a0 = at(k, o, dy0), a1 = at(k + 1, o, dy0); gb.quadOut(a0, a1, at(k + 1, o, dy1), at(k, o, dy1), col, -t[1] * sg, 0, t[0] * sg); } };
+    band(-A, A, 0.02, ASP);
+    band(A, A + S, 0.045, WALK); band(-A - S, -A, 0.045, WALK);
+    wall(A, 0.02, 0.045, CURB, -1); wall(-A, 0.02, 0.045, CURB, 1);
+    if (deck) {   // ponte: laje por baixo, beirada de concreto, mureta e corrimão
+      band(-A - S, A + S, -0.085, CONd, -1);
       for (const sg of [1, -1]) {
-        const a0 = at(k, sg * A, ya), a1 = at(k + 1, sg * A, ya), t = pc.tan[k];
-        gb.quadOut(a0, a1, [a1[0], ys, a1[2]], [a0[0], ys, a0[2]], CURB, t[1] * sg, 0, -t[0] * sg);
-        const e0 = at(k, sg * (A + S), hy), e1 = at(k + 1, sg * (A + S), hy);
-        gb.quadOut(e0, e1, [e1[0], ys, e1[2]], [e0[0], ys, e0[2]], WALK, -t[1] * sg, 0, t[0] * sg);
+        wall(sg * (A + S), -0.085, 0.045, CON, sg);
+        wall(sg * (A + S - 0.004), 0.045, 0.105, [0.78, 0.77, 0.74], sg); wall(sg * (A + S - 0.03), 0.045, 0.105, [0.72, 0.71, 0.68], -sg);
+        for (let k = 0; k < M; k++) gb.quadOut(at(k, sg * (A + S - 0.03), 0.105), at(k + 1, sg * (A + S - 0.03), 0.105), at(k + 1, sg * (A + S - 0.004), 0.105), at(k, sg * (A + S - 0.004), 0.105), [0.82, 0.81, 0.78], 0, 1, 0);
+        for (let k = 0; k < M; k += 2) { const q = at(k, sg * (A + S - 0.017), 0.105); solidBox(gb, q[0] - 0.007, q[1], q[2] - 0.007, q[0] + 0.007, q[1] + 0.07, q[2] + 0.007, [0.3, 0.33, 0.38]); }
+        wall(sg * (A + S - 0.017), 0.17, 0.182, [0.3, 0.33, 0.38], sg);
       }
+    } else { wall(A + S, -0.02, 0.045, WALK, 1); wall(-A - S, -0.02, 0.045, WALK, -1); }
+    for (let k = 0; k < M; k++) {
       const dm = pc.dash + pc.len * (k + 0.5) / M;
-      if (!av) { if (dm % 0.5 < 0.26) pcQuad(gb, at(k, -0.013, ya + 0.01), at(k + 1, -0.013, ya + 0.01), at(k + 1, 0.013, ya + 0.01), at(k, 0.013, ya + 0.01), DASH); }
-      else { if (dm % 0.42 < 0.21) for (const sg of [1, -1]) pcQuad(gb, at(k, sg * 0.2245, ya + 0.01), at(k + 1, sg * 0.2245, ya + 0.01), at(k + 1, sg * 0.2405, ya + 0.01), at(k, sg * 0.2405, ya + 0.01), WHITE); }
+      if (!av) { if (dm % 0.5 < 0.26) gb.quadOut(at(k, -0.013, 0.03), at(k + 1, -0.013, 0.03), at(k + 1, 0.013, 0.03), at(k, 0.013, 0.03), DASH, 0, 1, 0); }
+      else if (dm % 0.42 < 0.21) for (const sg of [1, -1]) gb.quadOut(at(k, sg * 0.2245, 0.03), at(k + 1, sg * 0.2245, 0.03), at(k + 1, sg * 0.2405, 0.03), at(k, sg * 0.2405, 0.03), WHITE, 0, 1, 0);
     }
-    if (av) { band(-0.038, 0.038, hy + 0.05, CURB); band(-0.026, 0.026, hy + 0.056, GRASS); }
-    // esquina isolada: o canto de fora da quadra vira calçada, como numa esquina de verdade
-    if (pc.corner && pc.lockA && pc.lockB) {
-      const i = pc.i, din = [pc.tan[0][0], pc.tan[0][1]], dout = [pc.tan[M][0], pc.tan[M][1]], cx = tcx(i) - 0.5 * (dout[0] - din[0]), cz = tcz(i) - 0.5 * (dout[1] - din[1]);
-      const mp = pc.pts[M >> 1], mt = pc.tan[M >> 1], sg = (-mt[1] * (cx - mp[0]) + mt[0] * (cz - mp[1])) > 0 ? 1 : -1;
-      for (let k = 0; k < M; k++) gb.triOut([cx, ys, cz], at(k, sg * (A + S), ys), at(k + 1, sg * (A + S), ys), WALK, 0, 1, 0);
-    }
+    if (av) { band(-0.038, 0.038, 0.05, CURB); band(-0.026, 0.026, 0.056, GRASS); }
   }
-  function pcQuad(gb, a, b, c, d, col) { gb.quadOut(a, b, c, d, col, 0, 1, 0); }
   function surfY(i, u, v, mask) {
     if (city.terrain[i] === T.WATER && city.road[i]) return deckY(i, u, v);
     if (mask === undefined) mask = rampMaskC(i);
@@ -3890,10 +3944,10 @@ const R3 = (function () {
     const gb = new GeoBuilder();
     const asphalt = [0.27, 0.28, 0.31], walk = [0.6, 0.59, 0.56], curb = [0.44, 0.44, 0.43], joint = [0.5, 0.49, 0.47], dash = [0.95, 0.82, 0.35], deck = [0.6, 0.6, 0.62], rail = [0.85, 0.85, 0.88], white = [0.85, 0.85, 0.85];
     const rd = city.road;
-    const conn = (i, j) => city.roadConn(i, j);
+    const conn = (i, j) => vConn(i, j);
     for (let z = cz * CHUNK; z < (cz + 1) * CHUNK; z++) for (let x = cx * CHUNK; x < (cx + 1) * CHUNK; x++) {
       const i = z * W + x; if (!rd[i]) continue;
-      { const pc = ribPiece(i); if (pc) { drawRibbon(gb, pc, city.height[i] * TH); continue; } }
+      { const pc = ribPiece(i); if (pc) { drawRibbon(gb, pc); continue; } }
       const bridge = city.terrain[i] === T.WATER, mask = bridge ? 16 : rampMaskC(i), type = rd[i];
       const L = x > 0 && conn(i, i - 1), R = x < W - 1 && conn(i, i + 1), U = z > 0 && conn(i, i - W), D = z < H - 1 && conn(i, i + W);
       patch(gb, i, x, z, 0, 0, 1, 1, 0.02, type === 3 ? [0.29, 0.3, 0.32] : asphalt, mask);
@@ -4043,7 +4097,14 @@ const R3 = (function () {
     const links = i => { const x = i % W, z = (i / W) | 0; return { L: x > 0 && conn(i, i - 1), R: x < W - 1 && conn(i, i + 1), U: z > 0 && conn(i, i - W), D: z < H - 1 && conn(i, i + W) }; };
     for (let i = 0; i < N; i++) {
       if (!isDeck(i)) continue;
-      const x = i % W, z = (i / W) | 0, cx = x - HW + 0.5, cz = z - HH + 0.5, { L, R, U, D } = links(i);
+      const x = i % W, z = (i / W) | 0, cx = x - HW + 0.5, cz = z - HH + 0.5, { L, R, U, D } = links(i), rp = ribPiece(i);
+      if (rp) {   // ponte em curva: pilar no meio da peça, de través
+        if ((x + z) % 2) continue;
+        const q = ribPoint(rp, 0.5), yTop = ribY(rp, 0.5) - SL, nx = -q.tz, nz = q.tx, px = q.x, pz = q.z;
+        for (const o of rp.typ === 2 ? [-0.3, 0.3] : [-0.24, 0.24]) cylinder(gb, px + nx * o, pz + nz * o, 0.05, BOT, yTop - 0.05, 8, CON);
+        beam(gb, [px - nx * 0.42, yTop - 0.03, pz - nz * 0.42], [px + nx * 0.42, yTop - 0.03, pz + nz * 0.42], 0.12, 0.06, CON);
+        continue;
+      }
       const horiz = (L || R) && !U && !D, vert = (U || D) && !L && !R, wide = city.road[i] !== 1;
       // encontro: bloco de concreto na margem, segurando a ponta do tabuleiro
       for (const [dx, dz, has] of [[-1, 0, L], [1, 0, R], [0, -1, U], [0, 1, D]]) {
@@ -4060,7 +4121,7 @@ const R3 = (function () {
       else solidBox(gb, cx - 0.44, yTop - 0.06, cz - 0.07, cx + 0.44, yTop, cz + 0.07, CON);
     }
     // vãos longos (trechos retos sobre a água): arco de aço ou ponte estaiada
-    const straightDeck = (i, horiz) => { if (!isDeck(i)) return false; const k = links(i); return horiz ? (k.L || k.R) && !k.U && !k.D : (k.U || k.D) && !k.L && !k.R; };
+    const straightDeck = (i, horiz) => { if (!isDeck(i) || ribPiece(i)) return false; const k = links(i); return horiz ? (k.L || k.R) && !k.U && !k.D : (k.U || k.D) && !k.L && !k.R; };
     const runs = [];
     for (const horiz of [true, false]) for (let a = 0; a < H; a++) {
       let start = -1;
@@ -4107,18 +4168,18 @@ const R3 = (function () {
     for (const [k, list] of obstacles) { const f = list.filter(o => o.t !== 'lamp'); if (f.length) obstacles.set(k, f); else obstacles.delete(k); }
     for (let z = 0; z < H && n < 2500; z++) for (let x = 0; x < W && n < 2500; x++) {
       const i = z * W + x; if (!rd[i] || (rd[i] === 3 ? (x + z) % 3 : (x + z) % 2)) continue;
-      const L = x > 0 && city.roadConn(i, i - 1), R = x < W - 1 && city.roadConn(i, i + 1), U = z > 0 && city.roadConn(i, i - W), D = z < H - 1 && city.roadConn(i, i + W);
+      const L = x > 0 && vConn(i, i - 1), R = x < W - 1 && vConn(i, i + 1), U = z > 0 && vConn(i, i - W), D = z < H - 1 && vConn(i, i + W);
       let lx, lz;
       const rpc = rd[i] !== 3 ? ribPiece(i) : null;
       if (rpc) { const q = ribPoint(rpc, 0.5), sg = ((x * 7 + z * 3) >> 1) % 2 ? 1 : -1, o = sg * (rpc.typ === 2 ? 0.46 : 0.45) * q.w; lx = q.x - q.tz * o - (x - HW); lz = q.z + q.tx * o - (z - HH); }
       else if (rd[i] === 3) { const alt = Math.floor((x + z) / 3) % 2; if (!U && !D) { lx = 0.5; lz = alt ? 0.06 : 0.94; } else if (!L && !R) { lz = 0.5; lx = alt ? 0.06 : 0.94; } else continue; }
       else if (!U) { lx = 0.5; lz = 0.065; } else if (!L) { lx = 0.065; lz = 0.5; } else if (!D) { lx = 0.5; lz = 0.935; } else if (!R) { lx = 0.935; lz = 0.5; } else continue;
-      const y = surfY(i, lx, lz) + 0.045;
+      const y = (rpc ? ribY(rpc, 0.5) : surfY(i, lx, lz)) + 0.045 + (rpc && rpc.deck ? 0.06 : 0);
       addObstacle(i, x - HW + lx, z - HH + lz, 0.04, 'lamp');
       dummy.position.set(x - HW + lx, y + 0.21, z - HH + lz); dummy.rotation.set(0, 0, 0); dummy.scale.set(1, 1, 1); dummy.updateMatrix(); lampPost.setMatrixAt(n, dummy.matrix);
       dummy.position.set(x - HW + lx, y + 0.43, z - HH + lz); dummy.updateMatrix(); lampHead.setMatrixAt(n, dummy.matrix);
       { // o clarão no chão acompanha a rampa e encolhe na beira de barrancos, para não virar uma placa solta no ar
-        const ramp = rampMaskC(i) || isDeck(i), ox = lx < 0.2 ? -1 : lx > 0.8 ? 1 : 0, oz = lz < 0.2 ? -1 : lz > 0.8 ? 1 : 0, j = i + ox + oz * W;
+        const ramp = !rpc && (rampMaskC(i) || isDeck(i)), ox = rpc ? 0 : lx < 0.2 ? -1 : lx > 0.8 ? 1 : 0, oz = lz < 0.2 ? -1 : lz > 0.8 ? 1 : 0, j = i + ox + oz * W;
         const cliff = (x + ox < 0 || x + ox >= W || z + oz < 0 || z + oz >= H) || city.height[j] !== city.height[i] || city.terrain[j] === T.WATER;
         const gs = ramp ? 0.5 : cliff ? 0.3 : 1;
         dummy.position.set(x - HW + lx - ox * (ramp || cliff ? 0.12 : 0), y + 0.012, z - HH + lz - oz * (ramp || cliff ? 0.12 : 0));
@@ -4134,7 +4195,7 @@ const R3 = (function () {
     for (let i = 0; i < N && signals.length < 900; i++) {
       if (!rd[i] || !isSignal(i)) continue; const x = i % W, z = (i / W) | 0;
       for (const [ox, oz] of NB4) {
-        const xx = x + ox, zz = z + oz; if (xx < 0 || zz < 0 || xx >= W || zz >= H || !city.roadConn(i, zz * W + xx) || signals.length >= 900) continue;
+        const xx = x + ox, zz = z + oz; if (xx < 0 || zz < 0 || xx >= W || zz >= H || !vConn(i, zz * W + xx) || signals.length >= 900 || sameSig(i, zz * W + xx)) continue;
         const u = 0.5 + ox * 0.44 + oz * 0.44, v = 0.5 + oz * 0.44 - ox * 0.44, k = signals.length, y = surfY(i, u, v) + 0.045;
         signals.push({ x: x - HW + u, y, z: z - HH + v, i, from: zz * W + xx });
         dummy.position.set(x - HW + u, y + 0.15, z - HH + v); dummy.rotation.set(0, 0, 0); dummy.scale.set(1, 1, 1); dummy.updateMatrix(); sigPole.setMatrixAt(k, dummy.matrix);
@@ -4954,8 +5015,20 @@ const R3 = (function () {
     if (type === 'bus') return 'bus';
     return 'car';
   }
+  // quem para no fim do trajeto (entrega, visita, ocorrência) não para colado num cruzamento: um pouco antes ou um pouco depois
+  function fixStop(p) {
+    const n = p.length; if (n < 3) return p;
+    const bad = (a, b) => isJunction(a) || isJunction(b) || !!rampMaskC(a) || !!rampMaskC(b) || isDeck(a) || isDeck(b);
+    if (!bad(p[n - 2], p[n - 1])) return p;
+    if (n >= 4 && !bad(p[n - 3], p[n - 2])) return p.slice(0, n - 1);
+    const Y = p[n - 1], X = p[n - 2], yx = Y % W, yz = (Y / W) | 0, sx = yx - (X % W), sz = yz - ((X / W) | 0);
+    for (const [ox, oz] of [[sx, sz], ...NB4]) { const xx = yx + ox, zz = yz + oz; if (xx < 0 || zz < 0 || xx >= W || zz >= H) continue; const Z = zz * W + xx; if (Z === X || !vConn(Y, Z) || bad(Y, Z)) continue; return p.concat([Z]); }
+    if (n >= 5 && !bad(p[n - 4], p[n - 3])) return p.slice(0, n - 2);
+    return p;
+  }
   function addAgent(type, path, opts) {
     if (!path || path.length < 2) return null;
+    if (opts && opts.back !== undefined && opts.back !== null && type !== 'fire') path = fixStop(path);
     // não nasce em cima de outro veículo: espera a faixa de saída ficar livre
     const key0 = path[0] * N + path[1]; let lane0 = laneMap.get(key0);
     if (type !== 'fire' && lane0 && lane0.some(o => o.t < 0.8)) return null;
@@ -4996,7 +5069,7 @@ const R3 = (function () {
     const any = list => list.length ? rnd(list) : null;
     if (now - sweepT > 2 || now < sweepT) {
       sweepT = now; const live = new Set(agents);
-      for (const [k, a] of slotMap) if (!live.has(a) || a.slot !== k) slotMap.delete(k);
+      for (const [k, a] of slotMap) if (!live.has(a) || (a.slot !== k && !(a.pullSlots && a.pullSlots.includes(k)))) slotMap.delete(k);
       for (let i = agents.length - 1; i >= 0; i--) { const a = agents[i]; if (a.state === 'garage' && !alive(a.gb)) { agents.splice(i, 1); continue; } if (a.state !== 'curb') continue; const A = a.path[a.seg], B = a.path[a.seg + 1]; if (city.road[A] !== 1 || city.road[B] !== 1 || !city.roadConn(A, B)) { slotMap.delete(a.slot); if (alive(a.destB) && !a.pend) { a.state = 'garage'; a.gb = a.destB; a.slot = undefined; a.stopT = undefined; a.px = undefined; } else agents.splice(i, 1); } }
     }
     if (L.res.length) {
@@ -5169,7 +5242,7 @@ const R3 = (function () {
       if (isCar) { const fx = Math.sin(rot) * 0.11, fz = Math.cos(rot) * 0.11; pitch = -Math.atan2(yAt(x + fx, z + fz) - yAt(x - fx, z - fz), 0.22); }
       return { x, y: yAt(x, z), z, rot, pitch };
     };
-    { const rh = ribHalf(c); if (rh) { const sq = rh.fwd ? rh.u : 1 - rh.u, q = ribPoint(rh.pc, sq), f = clamp(sq, 0, 1) * RIB_M, kq = Math.min(RIB_M - 1, Math.floor(f)), kk = rh.pc.kap[kq] + (rh.pc.kap[kq + 1] - rh.pc.kap[kq]) * (f - kq); let o = (rh.fwd ? side : -side) * q.w; if (o * kk > 0.92) o = 0.92 / kk; return fin(q.x - q.tz * o, q.z + q.tx * o, rh.fwd ? Math.atan2(q.tx, q.tz) : Math.atan2(-q.tx, -q.tz)); } }
+    { const rh = ribHalf(c); if (rh) { const pc = rh.pc, sq = rh.fwd ? rh.u : 1 - rh.u, q = ribPoint(pc, sq), f = clamp(sq, 0, 1) * RIB_M, kq = Math.min(RIB_M - 1, Math.floor(f)), kk = pc.kap[kq] + (pc.kap[kq + 1] - pc.kap[kq]) * (f - kq); let o = (rh.fwd ? side : -side) * q.w; if (o * kk > 0.92) o = 0.92 / kk; const px = q.x - q.tz * o, pz = q.z + q.tx * o, rot = rh.fwd ? Math.atan2(q.tx, q.tz) : Math.atan2(-q.tx, -q.tz); let pitch = 0; if (isCar && pc.deck) { const d2 = 0.11 / Math.max(0.2, pc.len); pitch = -Math.atan2((ribY(pc, Math.min(1, sq + d2)) - ribY(pc, Math.max(0, sq - d2))) * (rh.fwd ? 1 : -1), 0.22); } return { x: px, y: ribY(pc, sq), z: pz, rot, pitch }; } }
     if (turnOf(c)) {
       const { cx, cz, ix, iz, ox, oz, u } = TURN;
       // E: entrada na quadra; X: saída; K: encontro das duas faixas
@@ -5195,7 +5268,7 @@ const R3 = (function () {
   // ----- trânsito: distância do carro da frente, preferência nos cruzamentos, curvas mais lentas -----
   // rota de carro (Dijkstra): prefere avenidas, foge de quadras paradas e de cruzamentos em excesso
   let loadMap = null, pDist = null, pPrev = null;
-  function carPath(from, to, avoid) {
+  function carPath(from, to, avoid, avoidW) {
     if (from === to) return [from];
     if (!pDist) { pDist = new Float64Array(N); pPrev = new Int32Array(N); }
     pDist.fill(Infinity); pDist[from] = 0; pPrev[from] = -1;
@@ -5208,9 +5281,9 @@ const R3 = (function () {
       if (u === to) { const p = []; for (let q = to; q >= 0; q = pPrev[q]) p.push(q); return p.reverse(); }
       const ux = u % W, uz = (u / W) | 0;
       for (const [ox, oz] of NB4) {
-        const xx = ux + ox, zz = uz + oz; if (xx < 0 || zz < 0 || xx >= W || zz >= H) continue; const v = zz * W + xx; if (!city.roadConn(u, v)) continue;
+        const xx = ux + ox, zz = uz + oz; if (xx < 0 || zz < 0 || xx >= W || zz >= H) continue; const v = zz * W + xx; if (!vConn(u, v)) continue;
         const rt = city.road[v]; let w = rt === 2 ? 0.7 : rt === 3 ? 0.55 : 1;
-        if (loadMap) w += loadMap[v] * 1.2; if (isJunction(v)) w += isSignal(v) ? 0.5 : 0.25; if (v === avoid) w += 8;
+        if (loadMap) w += loadMap[v] * 1.2; if (isJunction(v)) w += isSignal(v) ? 0.5 : 0.25; if (v === avoid) w += avoidW || 8;
         const nd = d + w; if (nd >= pDist[v]) continue; pDist[v] = nd; pPrev[v] = u;
         let k = hn.length; hd.push(nd); hn.push(v); while (k > 0) { const pr = (k - 1) >> 1; if (hd[pr] <= nd) break; hd[k] = hd[pr]; hn[k] = hn[pr]; k = pr; } hd[k] = nd; hn[k] = v;
       }
@@ -5226,27 +5299,66 @@ const R3 = (function () {
   const VS = 0.86;   // veículos um pouco menores: sobra pista
   const VEH_CAP = { car: 160, car2: 110, car3: 110, moto: 60, motoP: 60, van: 60, truck: 60, bus: 16 };
   const laneMap = new Map(), junctionOcc = new Map();
+  // duas vias retas encostadas lado a lado (sem uma cruzar a outra): para os veículos são vias separadas,
+  // não um cruzamento a cada quadra (senão vira um mar de semáforos e trava tudo)
+  let sideCache = null;
+  function buildSide() {
+    sideCache = new Uint8Array(N);
+    const ok = i => city.road[i] && city.road[i] !== 3, rc = (a, b) => b >= 0 && b < N && city.roadConn(a, b);
+    for (let i = 0; i < N; i++) {
+      if (!ok(i)) continue; const x = i % W, z = (i / W) | 0;
+      if (x < W - 1 && z > 0 && z < H - 1) { const j = i + 1; if (ok(j) && city.roadConn(i, j) && rc(i, i - W) && rc(i, i + W) && rc(j, j - W) && rc(j, j + W) && !(x > 0 && rc(i, i - 1)) && !(x + 2 < W && rc(j, j + 1))) sideCache[i] |= 1; }
+      if (z < H - 1 && x > 0 && x < W - 1) { const j = i + W; if (ok(j) && city.roadConn(i, j) && rc(i, i - 1) && rc(i, i + 1) && rc(j, j - 1) && rc(j, j + 1) && !(z > 0 && rc(i, i - W)) && !(z + 2 < H && rc(j, j + W))) sideCache[i] |= 2; }
+    }
+  }
+  function vConn(i, j) {
+    if (!city.roadConn(i, j)) return false; if (!sideCache) buildSide();
+    const d = j - i; return d === 1 ? !(sideCache[i] & 1) : d === -1 ? !(sideCache[j] & 1) : d === W ? !(sideCache[i] & 2) : d === -W ? !(sideCache[j] & 2) : true;
+  }
   let junctionCache = null;
-  function isJunction(i) { if (!junctionCache) junctionCache = new Int8Array(N).fill(-1); let v = junctionCache[i]; if (v < 0) { const x = i % W, z = (i / W) | 0; let n = 0; if (x > 0 && city.roadConn(i, i - 1)) n++; if (x < W - 1 && city.roadConn(i, i + 1)) n++; if (z > 0 && city.roadConn(i, i - W)) n++; if (z < H - 1 && city.roadConn(i, i + W)) n++; v = junctionCache[i] = n >= 3 ? 1 : 0; } return v === 1; }
+  function isJunction(i) { if (!junctionCache) junctionCache = new Int8Array(N).fill(-1); let v = junctionCache[i]; if (v < 0) { const x = i % W, z = (i / W) | 0; let n = 0; if (x > 0 && vConn(i, i - 1)) n++; if (x < W - 1 && vConn(i, i + 1)) n++; if (z > 0 && vConn(i, i - W)) n++; if (z < H - 1 && vConn(i, i + W)) n++; v = junctionCache[i] = n >= 3 ? 1 : 0; } return v === 1; }
   // semáforos: cruzamentos de 4 ruas ou com avenida; dois tempos (eixo x / eixo z) com amarelo e vermelho geral
   let signalCache = null, sigT = 0;
   const SIG_PED = 6.4, SIG_G = 4.8, SIG_Y = 1.1, SIG_R = 0.6, SIG_SLOT = SIG_G + SIG_Y + SIG_R, HOLD = 0.23, sigArms = new Map();
   let redPrev = new Set(), redNow = new Set();
-  function isSignal(i) {
-    if (!signalCache) signalCache = new Int8Array(N).fill(-1); let v = signalCache[i];
-    if (v < 0) { v = 0; if (city.road[i] && city.road[i] !== 3 && isJunction(i)) { const x = i % W, z = (i / W) | 0; let n = 0, av = city.road[i] === 2, hw = false; for (const [ox, oz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const xx = x + ox, zz = z + oz; if (xx < 0 || zz < 0 || xx >= W || zz >= H) continue; const j = zz * W + xx; if (!city.roadConn(i, j)) continue; n++; if (city.road[j] === 2) av = true; if (city.road[j] === 3) hw = true; } v = !hw && (n === 4 || av) ? 1 : 0; } signalCache[i] = v; }
-    return v === 1;
+  function rawSignal(i) {
+    if (!city.road[i] || city.road[i] === 3 || !isJunction(i)) return false;
+    const x = i % W, z = (i / W) | 0; let n = 0, av = city.road[i] === 2, hw = false;
+    for (const [ox, oz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const xx = x + ox, zz = z + oz; if (xx < 0 || zz < 0 || xx >= W || zz >= H) continue; const j = zz * W + xx; if (!vConn(i, j)) continue; n++; if (city.road[j] === 2) av = true; if (city.road[j] === 3) hw = true; }
+    return !hw && (n === 4 || av);
   }
+  // cruzamentos com semáforo encostados um no outro viram um conjunto só: um controlador para todos, e quem já está
+  // dentro do conjunto segue sem parar no segundo sinal. Faixa longa de cruzamentos (ruas lado a lado) fica sem sinal.
+  const sigClu = new Map();
+  function buildSignals() {
+    signalCache = new Int32Array(N).fill(-1); sigClu.clear();
+    const seen = new Uint8Array(N);
+    for (let i = 0; i < N; i++) {
+      if (seen[i] || !rawSignal(i)) continue;
+      const comp = [i]; seen[i] = 1;
+      for (let h = 0; h < comp.length; h++) { const t = comp[h], x = t % W, z = (t / W) | 0; for (const [ox, oz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const xx = x + ox, zz = z + oz; if (xx < 0 || zz < 0 || xx >= W || zz >= H) continue; const j = zz * W + xx; if (seen[j] || !vConn(t, j) || !rawSignal(j)) continue; seen[j] = 1; comp.push(j); } }
+      if (comp.length > 4) continue;
+      const key = Math.min(...comp), arms = [];
+      for (const t of comp) signalCache[t] = key;
+      for (const t of comp) { const x = t % W, z = (t / W) | 0; for (const [ox, oz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const xx = x + ox, zz = z + oz; if (xx < 0 || zz < 0 || xx >= W || zz >= H) continue; const j = zz * W + xx; if (!vConn(t, j) || signalCache[j] === key) continue; arms.push(j, t); } }
+      // chegadas no mesmo sentido (ruas paralelas entrando no conjunto) abrem juntas
+      const grp = new Map(); for (let q = 0; q < arms.length; q += 2) { const hd = arms[q + 1] - arms[q]; if (!grp.has(hd)) grp.set(hd, []); grp.get(hd).push(q >> 1); }
+      const groups = [...grp.values()], gOf = new Int32Array(arms.length >> 1); groups.forEach((g, gi) => g.forEach(k => { gOf[k] = gi; }));
+      sigClu.set(key, { tiles: comp, arms, groups, gOf });
+    }
+  }
+  function isSignal(i) { if (!signalCache) buildSignals(); return signalCache[i] >= 0; }
+  const sameSig = (i, j) => isSignal(i) && signalCache[j] === signalCache[i];
   // 2 = verde, 1 = amarelo, 0 = vermelho, para quem chega ao cruzamento i vindo da quadra `from`.
   // Cada chegada tem o seu tempo sozinha: quem vira à esquerda não cruza com ninguém.
   const sigCtl = new Map(), pedWant = new Map();
   function sigCtlOf(i) {
-    let arms = sigArms.get(i);
-    if (!arms) { arms = []; const x = i % W, z = (i / W) | 0; for (const [ox, oz] of NB4) { const xx = x + ox, zz = z + oz; if (xx < 0 || zz < 0 || xx >= W || zz >= H) continue; const j = zz * W + xx; if (city.roadConn(i, j)) arms.push(j); } sigArms.set(i, arms); }
-    let c = sigCtl.get(i); if (!c) { c = { arms, cur: i % Math.max(1, arms.length), ph: 0, t0: sigT - (i * 7 % 5), upd: -1, cars: 2 }; sigCtl.set(i, c); }
-    c.arms = arms; if (c.upd === sigT || !arms.length) return c; c.upd = sigT;
-    const n = arms.length, el = sigT - c.t0, dem = k => { const l = laneMap.get(arms[k] * N + i); return l ? l.length : 0; };
-    const pw = sigT - (pedWant.get(i) || -99) < 1.5;
+    if (!signalCache) buildSignals();
+    const key = signalCache[i] >= 0 ? signalCache[i] : i, cl = sigClu.get(key), arms = cl ? cl.arms : [], groups = cl ? cl.groups : [];
+    let c = sigCtl.get(key); if (!c) { c = { key, arms, cur: key % Math.max(1, groups.length), ph: 0, t0: sigT - (key * 7 % 5), upd: -1, cars: 2 }; sigCtl.set(key, c); }
+    c.arms = arms; c.gOf = cl ? cl.gOf : null; if (c.upd === sigT || !arms.length) return c; c.upd = sigT;
+    const n = groups.length, el = sigT - c.t0, dem = g => { let s2 = 0; for (const k of groups[g]) { const l = laneMap.get(arms[2 * k] * N + arms[2 * k + 1]); if (l) s2 += l.length; } return s2; };
+    const pw = sigT - (pedWant.get(key) || -99) < 1.5;
     const next = () => { if (pw && c.cars >= 1) { c.ph = 3; c.cars = 0; } else { let nx = -1, best = 0; for (let q = 1; q <= n; q++) { const k = (c.cur + q) % n, d = dem(k); if (d > 0 && nx < 0) nx = k; if (d > best) best = d; } if (nx >= 0) c.cur = nx; c.ph = 0; c.cars++; } c.t0 = sigT; };
     if (c.cur >= n) c.cur = 0;
     if (c.ph === 0) { const mine = dem(c.cur); let others = 0; for (let k = 0; k < n; k++) if (k !== c.cur) others += dem(k); if (el > 2.4 && (others > 0 || pw) && (mine === 0 || el > (others > mine ? 7 : 11))) { c.ph = 1; c.t0 = sigT; } }
@@ -5255,10 +5367,15 @@ const R3 = (function () {
     else if (el > 5.6) next();
     return c;
   }
-  // 2 = verde, 1 = amarelo, 0 = vermelho, para quem chega ao cruzamento i vindo da quadra `from`. Uma chegada por vez.
-  function sigState(i, from) { const c = sigCtlOf(i), k = c.arms.indexOf(from); if (k < 0) return 2; if (c.ph === 3 || k !== c.cur) return 0; return c.ph === 0 ? 2 : c.ph === 1 ? 1 : 0; }
+  // 2 = verde, 1 = amarelo, 0 = vermelho, para quem chega ao cruzamento i vindo da quadra `from`. Um sentido de chegada por vez;
+  // dentro de um conjunto de semáforos colados, é sempre verde (quem entrou, atravessa tudo).
+  function sigState(i, from) {
+    const c = sigCtlOf(i); if (from >= 0 && from < N && signalCache[from] === c.key) return 2;
+    let k = -1; for (let q = 0; q < c.arms.length; q += 2) if (c.arms[q] === from && c.arms[q + 1] === i) { k = q >> 1; break; }
+    if (k < 0 || !c.gOf) return 2; if (c.ph === 3 || c.gOf[k] !== c.cur) return 0; return c.ph === 0 ? 2 : c.ph === 1 ? 1 : 0;
+  }
   // tempo dos pedestres (todos os carros parados): só entra no ciclo quando alguém está esperando para atravessar
-  function pedGreen(i) { const c = sigCtlOf(i), el = sigT - c.t0, g = c.ph === 3 && el > 0.2 && el < 2.7; if (!g) pedWant.set(i, sigT); return g; }
+  function pedGreen(i) { const c = sigCtlOf(i), el = sigT - c.t0, g = c.ph === 3 && el > 0.2 && el < 2.7; if (!g) pedWant.set(c.key, sigT); return g; }
   const signals = [];
   const SIG_COL = [new THREE.Color(0xff2a1a), new THREE.Color(0xffc21a), new THREE.Color(0x2bff5a)];
   // ----- estacionamento na rua: duas vagas por quadra e sentido, longe das esquinas e dos pontos de ônibus -----
@@ -5268,10 +5385,10 @@ const R3 = (function () {
   function calmTile(Tl, from) { // quadra reta (ou fim de rua), sem cruzamento nem curva
     if (isJunction(Tl) || rampMaskC(Tl) || city.terrain[Tl] === T.WATER || (lists && lists.busTile[Tl]) || ribPiece(Tl)) return false;
     const o = 2 * Tl - from, tx = Tl % W, tz = (Tl / W) | 0, ox = o % W, oz = Math.floor(o / W);
-    if (o >= 0 && o < N && Math.abs(ox - tx) + Math.abs(oz - tz) === 1 && city.roadConn(Tl, o)) return true;
+    if (o >= 0 && o < N && Math.abs(ox - tx) + Math.abs(oz - tz) === 1 && vConn(Tl, o)) return true;
     const cm = connMaskC(Tl); return cm === 1 || cm === 2 || cm === 4 || cm === 8;
   }
-  function slotOk(A, B, k) { return city.road[A] === 1 && city.road[B] === 1 && city.roadConn(A, B) && (k === 0 ? calmTile(A, B) : calmTile(B, A)) && !slotMap.has(slotKey(A, B, k)); }
+  function slotOk(A, B, k) { return city.road[A] === 1 && city.road[B] === 1 && vConn(A, B) && (k === 0 ? calmTile(A, B) : calmTile(B, A)) && !slotMap.has(slotKey(A, B, k)); }
   const trySeg = (A, B) => { const k0 = Math.random() < 0.5 ? 0 : 1; return slotOk(A, B, k0) ? k0 : slotOk(A, B, 1 - k0) ? 1 - k0 : -1; };
   const NB4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
   // vaga na última quadra do trajeto; se não houver, segue adiante (sem meia-volta) até achar uma
@@ -5280,7 +5397,7 @@ const R3 = (function () {
     const start = path[n - 1], par = new Map([[start, path[n - 2]]]), q = [start];
     for (let h = 0; h < q.length && h < 70; h++) {
       const t = q[h], tx = t % W, tz = (t / W) | 0;
-      for (const [ox, oz] of NB4) { const xx = tx + ox, zz = tz + oz; if (xx < 0 || zz < 0 || xx >= W || zz >= H) continue; const nb = zz * W + xx; if (par.has(nb) || nb === par.get(t) || !city.roadConn(t, nb)) continue;
+      for (const [ox, oz] of NB4) { const xx = tx + ox, zz = tz + oz; if (xx < 0 || zz < 0 || xx >= W || zz >= H) continue; const nb = zz * W + xx; if (par.has(nb) || nb === par.get(t) || !vConn(t, nb)) continue;
         par.set(nb, t); k = trySeg(t, nb);
         if (k >= 0) { const ext = [nb]; for (let u = t; u !== start; u = par.get(u)) ext.unshift(u); return { path: path.concat(ext), k }; }
         q.push(nb); }
@@ -5289,7 +5406,7 @@ const R3 = (function () {
   }
   function slotNear(tile) {
     const seen = new Set([tile]), q = [tile];
-    for (let h = 0; h < q.length && h < 60; h++) { const t = q[h], tx = t % W, tz = (t / W) | 0; for (const [ox, oz] of NB4) { const xx = tx + ox, zz = tz + oz; if (xx < 0 || zz < 0 || xx >= W || zz >= H) continue; const nb = zz * W + xx; if (!city.roadConn(t, nb)) continue; let k = trySeg(t, nb); if (k >= 0) return { A: t, B: nb, k }; if (!seen.has(nb)) { seen.add(nb); q.push(nb); } } }
+    for (let h = 0; h < q.length && h < 60; h++) { const t = q[h], tx = t % W, tz = (t / W) | 0; for (const [ox, oz] of NB4) { const xx = tx + ox, zz = tz + oz; if (xx < 0 || zz < 0 || xx >= W || zz >= H) continue; const nb = zz * W + xx; if (!vConn(t, nb)) continue; let k = trySeg(t, nb); if (k >= 0) return { A: t, B: nb, k }; if (!seen.has(nb)) { seen.add(nb); q.push(nb); } } }
     return null;
   }
   function takeSlot(a, plan) { const p = plan.path, n = p.length; if (a.slot !== undefined && slotMap.get(a.slot) === a) slotMap.delete(a.slot); a.slot = slotKey(p[n - 2], p[n - 1], plan.k); slotMap.set(a.slot, a); a.stopT = SLOT_T[plan.k]; }
@@ -5438,8 +5555,26 @@ const R3 = (function () {
     if (plan) takeSlot(a, plan); else { if (slotMap.get(a.slot) === a) slotMap.delete(a.slot); a.slot = undefined; a.stopT = undefined; a.leaving = !!leave; }
     a.path = plan ? plan.path : path; a.seg = 0; a.state = 'go'; a.v = 0; a.block = a.blockAll = 0; return true;
   }
+  const tEv = { boxGhost: 0, blockGhost: 0, vanish: 0, force: 0 };
   const vLen = a => (a.spec === 'car' ? (a.alt === 3 ? 0.26 : 0.42) : a.spec === 'van' ? 0.5 : a.spec === 'bus' ? 0.64 : 0.66) * VS;
   const pedGrid = new Map();
+  const movingCar = (o, self) => o !== self && !idleCar(o) && o.state !== 'curb' && o.state !== 'arrive';
+  // contramão livre para fazer o retorno no trecho X→Y (dentro de Y): ninguém chegando a Y nem saindo dele para X
+  function uturnClear(X, Y, self) {
+    let l = laneMap.get(Y * N + X); if (l) for (const o of l) if (movingCar(o, self) && o.t < 0.62) return false;
+    const yx = Y % W, yz = (Y / W) | 0;
+    for (const [ox, oz] of NB4) { const xx = yx + ox, zz = yz + oz; if (xx < 0 || zz < 0 || xx >= W || zz >= H) continue; const Z = zz * W + xx; if (Z === X || !vConn(Y, Z)) continue; l = laneMap.get(Z * N + Y); if (l) for (const o of l) if (movingCar(o, self) && o.t > 0.25) return false; }
+    return true;
+  }
+  // sair do meio-fio: ninguém vindo logo atrás na faixa
+  function mergeClear(X, Y, self) { const l = laneMap.get(X * N + Y); if (l) for (const o of l) if (movingCar(o, self) && o.t < 0.6 && (o.v || 0) > 0.05) return false; return true; }
+  // ultrapassagem pela contramão: nenhum veículo vindo de frente nas próximas quadras
+  function oppClear(a, A, B, C) {
+    const P = a.path, segs = [[B, A]]; if (C >= 0) segs.push([C, B]); const D = P[a.seg + 3]; if (C >= 0 && D !== undefined) segs.push([D, C]);
+    for (const [u, v] of segs) { const l = laneMap.get(u * N + v); if (l) for (const o of l) if (movingCar(o, a)) return false; }
+    return true;
+  }
+  function freePull(a) { if (a.pullSlots) { for (const k of a.pullSlots) if (slotMap.get(k) === a) slotMap.delete(k); a.pullSlots = null; } a.pull = 0; }
   function trafficPrep() {
     laneMap.clear(); junctionOcc.clear(); { const t = redPrev; redPrev = redNow; redNow = t; redNow.clear(); }
     if (!loadMap) loadMap = new Float32Array(N); for (let i = 0; i < N; i++) if (loadMap[i] > 0.001) loadMap[i] *= 0.97; else loadMap[i] = 0;
@@ -5456,6 +5591,8 @@ const R3 = (function () {
       if (tile === B) { const nx = a.path[a.seg + 2]; trn = nx !== undefined && (nx - B) !== (B - A); } else if (tile === A) trn = (B - A) !== (A - from);
       if (trn) from = -from - 1;
       if (tile >= 0) { let o = junctionOcc.get(tile); if (!o) { o = []; junctionOcc.set(tile, o); } o.push(from, pr); }
+      // entre dois cruzamentos colados: quem sai de um já está entrando no outro
+      if (a.t < 0.4 && a.seg > 0 && isJunction(A) && isJunction(B)) { const nx = a.path[a.seg + 2], tn2 = nx !== undefined && (nx - B) !== (B - A); let o2 = junctionOcc.get(B); if (!o2) { o2 = []; junctionOcc.set(B, o2); } o2.push(tn2 ? -A - 1 : A, 2); }
     }
     // pedestres na pista (atravessando): os carros freiam para eles
     pedGrid.clear();
@@ -5496,18 +5633,18 @@ const R3 = (function () {
     a.turnNext = C >= 0 && (C - B) !== (B - A);
     if (a.lane === undefined) a.lane = Math.random() < 0.5 ? 0 : 1;
     // distância até o veículo da frente em cada faixa, e de quem vem atrás (para trocar de faixa com segurança)
-    const gapL = [9, 9], rear = [9, 9]; let pass = 9;
+    const gapL = [9, 9], rear = [9, 9], gapBy = [null, null]; let pass = 9, passBy = null;
     if (!urgent && !ghost) {
       const scan = (list, off, m2) => { if (list) for (const o of list) {
         if (o === a) continue; const d = off + o.t - a.t, ln = o.lane || 0, half = (vLen(a) + vLen(o)) / 2;
         if (o.onFire && d < 0.25 && off === 0) a.emT = 1.2;      // viatura em emergência atrás: abre passagem
-        if (d < 0 || (d === 0 && !(o.ph > a.ph))) { if (m2 && -d - half < rear[ln]) rear[ln] = -d - half; continue; }
+        if (d < 0 || (d === 0 && !(o.ph > a.ph))) { if (m2) { if (-d - half < rear[ln]) rear[ln] = -d - half; } else if (idleCar(o) && d > -half - 0.12 && pass > 0) { pass = 0; passBy = o; } continue; }
         // distância real entre os dois (nas curvas o trecho é curto e a conta pela quadra engana)
         let g = d - half; if (d < 1.3 && a.px !== undefined && o.px !== undefined) g = Math.min(g, Math.hypot(o.px - a.px, o.pz - a.pz) - half * 0.94);
-        if (idleCar(o) && !m2) { if (g < pass) pass = g; continue; }
+        if (idleCar(o) && !m2) { if (g < pass) { pass = g; passBy = o; } continue; }
         // dentro do cruzamento quem vira atravessa as duas faixas: vale para ambas
         const both = !m2 || (off === 1 ? o.t < 0.5 : (o.turnNext && o.t > 0.5));
-        if (!both) { if (g < gapL[ln]) gapL[ln] = g; } else { if (g < gapL[0]) gapL[0] = g; if (g < gapL[1]) gapL[1] = g; }
+        if (!both) { if (g < gapL[ln]) { gapL[ln] = g; gapBy[ln] = o; } } else { if (g < gapL[0]) { gapL[0] = g; gapBy[0] = o; } if (g < gapL[1]) { gapL[1] = g; gapBy[1] = o; } }
       } };
       scan(laneMap.get(A * N + B), 0, multi);
       if (C >= 0) scan(laneMap.get(B * N + C), 1, multi && multiLane(C) && !a.turnNext);
@@ -5522,17 +5659,21 @@ const R3 = (function () {
       if (want < 0) want = a.lanePref;
       a.laneCool = (a.laneCool || 0) - dt;
       const other = 1 - a.lane, free = gapL[other] > 0.5 && rear[other] > 0.5;
-      if (a.laneCool <= 0 && free && a.t > 0.08 && a.t < 0.85 && ((want === other && gapL[other] > 0.5) || (want !== a.lane && gapL[a.lane] < 0.6 && gapL[other] > gapL[a.lane] + 0.45))) { a.lane = other; a.laneCool = 1.6; }
+      const idleAhead = gapBy[a.lane] && idleCar(gapBy[a.lane]) && gapL[a.lane] < 0.9;   // veículo parado na faixa (entrega): desvia para a outra
+      if (a.laneCool <= 0 && free && a.t > 0.08 && a.t < (idleAhead ? 0.97 : 0.85) && ((want === other && gapL[other] > 0.5) || (want !== a.lane && gapL[a.lane] < 0.6 && gapL[other] > gapL[a.lane] + 0.45) || (idleAhead && gapL[other] > gapL[a.lane] + 0.3))) { a.lane = other; a.laneCool = 1.6; }
     }
-    const gap = multi ? gapL[a.lane] : Math.min(gapL[0], gapL[1]);
+    const gap = multi ? gapL[a.lane] : Math.min(gapL[0], gapL[1]); a.gapBy = multi ? gapBy[a.lane] : gapL[0] <= gapL[1] ? gapBy[0] : gapBy[1];
     // rua de uma faixa: veículo parado no meio-fio à frente é contornado pelo meio da rua, devagar
-    a.passT = !multi && pass < 0.7 ? 1 : 0;
+    // rua de uma faixa: parado no meio-fio à frente, passa ao lado; parado na faixa, ultrapassa pela contramão só se ela estiver livre
+    let waitPass = false;
+    if (!multi && pass < 0.7 && passBy) { if (passBy.pull === 1 || (passBy.lat || 0) > 0.26) a.passT = 1; else if (a.passT === 2 || oppClear(a, A, B, C)) a.passT = 2; else { a.passT = 0; waitPass = true; } }
+    else a.passT = 0;
     let goal = gap < 0.05 ? 0 : gap < 0.55 ? (gap - 0.05) / 0.5 : 1;
     if (a.crashT > 0) { a.crashT -= dt; goal = 0; a.blockAll = -40; if (a.crashT <= 0) a.blockAll = 0; }
     a.why = goal < 0.05 ? 'gap' : '';
     if (a.passT) goal = Math.min(goal, 0.6);
     // cruzamento: só cede para quem vem das ruas transversais (quem vem de frente não atrapalha)
-    let red = false, yielding = false;
+    let red = false, yielding = waitPass; if (waitPass) a.why += 'wpass';
     if (!urgent && a.t <= 0.62 && isJunction(B)) {
       const sig = isSignal(B), st = sig ? sigState(B, A) : 2;
       if (sig && a.t <= HOLD + 0.07 && (st === 0 || (st === 1 && a.t < HOLD - 0.1))) {
@@ -5548,10 +5689,23 @@ const R3 = (function () {
       }
     }
     // não fecha o cruzamento: só entra se couber do outro lado
+    // retorno (meia-volta) adiante: espera a contramão ficar livre antes de começar
+    if (!urgent && C === A && a.t < 0.46 && !(a.blockAll > 14) && !uturnClear(A, B, a)) { goal = Math.min(goal, a.t > 0.36 ? 0 : 0.3); yielding = true; a.why += 'uturn'; }
+    // entrega / visita / ocorrência: reduz antes do ponto e, na rua calma, encosta no meio-fio (reserva as duas vagas da quadra)
+    if (a.back && a.stopHalf && a.seg === a.path.length - 2) {
+      goal = Math.min(goal, Math.max(0.16, (0.5 - a.t) * 2.4));
+      if (a.pull === undefined) { a.pull = 0; if (!isJunction(A) && !isJunction(B) && slotOk(A, B, 0) && slotOk(A, B, 1)) { const k0 = slotKey(A, B, 0), k1 = slotKey(A, B, 1); slotMap.set(k0, a); slotMap.set(k1, a); a.pullSlots = [k0, k1]; a.pull = 1; } }
+    }
     let boxed = false;
     if (!urgent && C >= 0 && a.t > 0.02 && a.t <= HOLD + 0.05 && isJunction(B)) {
-      const ex = laneMap.get(B * N + C), mC = multiLane(C) && multi;
-      if (ex) for (const o of ex) if (o !== a && o.t < 0.9 && (o.v || 0) < 0.12 && !idleCar(o) && (!mC || (o.lane || 0) === (a.lane || 0))) { goal = Math.min(goal, a.t >= HOLD ? 0 : Math.max(0.12, (HOLD - a.t) * 3.5)); if (a.t >= HOLD - 0.04) { boxed = true; a.why += 'box'; } break; }
+      const mC = multiLane(C) && multi, cl = isSignal(B) && !sameSig(B, A) ? signalCache[B] : -1; let hit = false;
+      for (let s2 = a.seg + 1, q = 0; q < 6 && !hit; q++, s2++) {
+        const P0 = a.path[s2], P1 = a.path[s2 + 1]; if (P1 === undefined) break;
+        const ex = laneMap.get(P0 * N + P1);
+        if (ex) for (const o of ex) if (o !== a && o.t < 0.9 && (o.v || 0) < 0.12 && (!idleCar(o) || (o.t < 0.6 && o.pull !== 1)) && (q > 0 || !mC || (o.lane || 0) === (a.lane || 0))) { hit = true; break; }
+        if (cl < 0 || signalCache[P1] !== cl) break;      // conjunto de semáforos: precisa caber na saída do conjunto todo
+      }
+      if (hit) { goal = Math.min(goal, a.t >= HOLD ? 0 : Math.max(0.12, (HOLD - a.t) * 3.5)); if (a.t >= HOLD - 0.04) { boxed = true; a.why += 'box'; } }
     }
     if (a.emT > 0) { a.emT -= dt; goal = Math.min(goal, 0.3); if (multi) a.lane = 1; }
     // parado há muito tempo: procura outro caminho a partir do próximo cruzamento
@@ -5590,9 +5744,13 @@ const R3 = (function () {
     if (urgent) goal = 1.15;
     // preso por muito tempo: primeiro ignora a preferência do cruzamento; só em último caso atravessa, para não travar a cidade
     const inQueue = !red && goal < 0.05 && redPrev.has(A * N + B);    // parado na fila de um sinal fechado: não é travamento
-    if (inQueue) { redNow.add(A * N + B); if (a.t < 0.5 && a.seg > 0) redNow.add(a.path[a.seg - 1] * N + A); }
-    if (red || inQueue) a.block = 0; else if (boxed || (yielding && a.blockAll < 14)) { a.block = 0; a.blockAll = (a.blockAll || 0) + dt; } else if (goal < 0.05) { a.block = (a.block || 0) + dt; a.blockAll = (a.blockAll || 0) + dt; if (a.block > 3) { a.force = 1.6; a.block = 0; if (a.px !== undefined) sndAt('horn', a.px, a.pz, 5); } if (a.blockAll > 30) { a.blockAll = 0; if (a.spec === 'bus' || a.lights) a.ghost = 2.5; else { a.state = 'arrive'; a.fade = 1; a.loop = null; a.back = null; } } } else { a.block = 0; if (a.v > 0.5) a.blockAll = 0; }
-    { const inBox = (a.t > 0.62 && isJunction(B)) || (a.t < 0.4 && isJunction(A)); if (inBox && (a.v || 0) < 0.05 && !(a.crashT > 0) && gap > 0.3) { a.boxT = (a.boxT || 0) + dt; if (a.boxT > 4) { a.ghost = 2.4; a.boxT = 0; } } else a.boxT = 0; }
+    if (inQueue || red) { redNow.add(A * N + B); if (a.t < 0.5 && a.seg > 0) redNow.add(a.path[a.seg - 1] * N + A); }
+    // fila atrás de quem espera com motivo (sinal, cruzamento, retorno, carga e descarga): também não é travamento
+    const ld = a.gapBy, qf = !red && !inQueue && goal < 0.05 && !!ld && ld !== a && (idleCar(ld) || (ld.qd > 0 && ld.qd < 40));
+    const boxOk = boxed && (a.blockAll || 0) < 20, yOk = yielding && (a.blockAll || 0) < 14;   // esperas com prazo: depois disso conta como travado
+    a.qd = red || inQueue || boxOk || yOk ? 1 : qf ? (idleCar(ld) ? 1 : ld.qd) + 1 : 0;
+    if (red || inQueue || qf) a.block = 0; else if (boxOk || yOk) { a.block = 0; a.blockAll = (a.blockAll || 0) + dt; } else if (goal < 0.05) { a.block = (a.block || 0) + dt; a.blockAll = (a.blockAll || 0) + dt; if (a.block > 3) { a.force = 1.6; a.block = 0; tEv.force++; if (a.px !== undefined) sndAt('horn', a.px, a.pz, 5); } if (a.blockAll > 30) { a.blockAll = 0; if (a.spec === 'bus' || a.lights) { a.ghost = 2.5; tEv.blockGhost++; } else { tEv.vanish++; a.vanished = true; { const w = (a.why || '-') + (isJunction(B) ? (isSignal(B) ? '@sig' : '@J') : '') + (C === A ? '@U' : '') + ':' + a.type + (a.gapBy ? '>' + a.gapBy.type + '/' + a.gapBy.state + '/' + (a.gapBy.why || '-') : ''); tEv.vw = tEv.vw || {}; tEv.vw[w] = (tEv.vw[w] || 0) + 1; } a.state = 'arrive'; a.fade = 1; a.loop = null; a.back = null; } } } else { a.block = 0; if (a.v > 0.5) a.blockAll = 0; }
+    { const inBox = (a.t > 0.62 && isJunction(B)) || (a.t < 0.4 && isJunction(A)); if (inBox && (a.v || 0) < 0.05 && !(a.crashT > 0) && gap > 0.3) { a.boxT = (a.boxT || 0) + dt; if (a.boxT > 4) { a.ghost = 2.4; a.boxT = 0; tEv.boxGhost++; } } else a.boxT = 0; }
     if (a.force > 0) a.force -= dt; if (a.ghost > 0) a.ghost -= dt;
     if (a.v === undefined) a.v = 0.2;
     a.v += clamp(goal - a.v, -4.5 * dt, 1.4 * dt);
@@ -5616,10 +5774,14 @@ const R3 = (function () {
       const idleNow = a.state === 'wait' || a.state === 'parked', tile = a.seg < a.path.length - 1 ? a.path[a.t < 0.5 ? a.seg : a.seg + 1] : a.path[a.seg];
       const onMulti = multiLane(tile); if (idleNow && onMulti) a.lane = 1;
       const nearSlot = false && a.stopT !== undefined;
-      const latT = (a.state === 'curb' && !(a.pk < 0.3)) ? PARK_LAT : (onMulti ? LANES[a.lane || 0] : LANE1) + (onMulti ? (idleNow ? 0.02 : 0) : a.onFire ? -0.12 : a.emT > 0 ? 0.05 : a.passT ? -0.125 : 0);
+      const latT = (a.state === 'curb' && !(a.pk < 0.3)) ? PARK_LAT : a.pull === 1 && !onMulti && (idleNow || (a.seg === a.path.length - 2 && a.t > 0.12)) ? PARK_LAT - 0.05 : (onMulti ? LANES[a.lane || 0] : LANE1) + (onMulti ? (idleNow ? 0.02 : 0) : a.onFire ? -0.12 : a.emT > 0 ? 0.05 : a.passT === 2 ? -0.205 : a.passT ? -0.09 : 0);
       a.lat = a.lat === undefined ? latT : a.lat + clamp(latT - a.lat, -dt * 0.3, dt * 0.3);
       const fk = a.state === 'arrive' ? a.fade : a.fadeIn === undefined ? 1 : a.fadeIn, side = a.lat + (1 - fk) * (0.46 - a.lat), sc = (0.45 + 0.55 * fk) * VS;
-      if (a.state === 'wait') { a.wait -= dt; if (a.wait <= 0) { if (a.back !== undefined && a.back !== null) { const p = carPath(a.path[a.path.length - 1], a.back); if (p && p.length > 1) { relink(a, a.path[a.path.length - 2], p); a.state = 'return'; a.back = null; a.stopHalf = false; } else { agents.splice(k, 1); continue; } } else { a.state = 'go'; } } }
+      if (a.state === 'wait') { a.wait -= dt; if (a.wait <= 0) { if (a.back !== undefined && a.back !== null) {
+        // volta: prefere dar a volta na quadra a retornar no meio da rua; se precisar retornar (ou sair do meio-fio), espera a vez
+        const Y = a.path[a.path.length - 1], X = a.path[a.path.length - 2], p = a.retP || carPath(Y, a.back, X, 16);
+        if (p && p.length > 1) { const ok = p[1] === X ? uturnClear(X, Y, a) : a.pull !== 1 || mergeClear(X, Y, a); if (!ok && (a.holdT = (a.holdT || 0) + 0.2) < 9) { a.retP = p; a.wait = 0.2; } else { freePull(a); relink(a, X, p); a.state = 'return'; a.back = null; a.stopHalf = false; a.retP = null; a.holdT = 0; } }
+        else { freePull(a); agents.splice(k, 1); continue; } } else { a.state = 'go'; } } }
       if (a.state === 'parked') { if (!a.target || !a.target.burning) { const home = a.path[0]; const p = bfsPath(a.path[a.path.length - 1], home); if (p && p.length > 1) { relink(a, a.path[a.path.length - 2], p); a.state = 'return'; a.target = null; a.stopHalf = false; } else { agents.splice(k, 1); continue; } } }
       let p = agentPose(a, side, dt, true);
       if (p === 'end') {
@@ -6099,7 +6261,7 @@ const R3 = (function () {
     const rk = weather.rain;
     if (rk > 0) bg = lerpC(bg, [bg[0] * 0.55 + 0.2, bg[1] * 0.55 + 0.22, bg[2] * 0.55 + 0.26], rk * 0.8);
     scene.background.setRGB(bg[0], bg[1], bg[2]); scene.fog.color.setRGB(bg[0], bg[1], bg[2]);
-    { const mist = Math.max(rk, 0.85 * clamp((tod - 0.2) / 0.03, 0, 1) * clamp((0.3 - tod) / 0.04, 0, 1)); scene.fog.near = lerp(80, 26, mist); scene.fog.far = lerp(230, 100, mist); }
+    { const mist = Math.max(rk, 0.85 * clamp((tod - 0.2) / 0.03, 0, 1) * clamp((0.3 - tod) / 0.04, 0, 1)); const cd = cam.dist || 20; scene.fog.near = lerp(80, 26, mist) + cd * 0.9; scene.fog.far = lerp(230, 100, mist) + cd * 1.7; }
     const hs = lerpC(HEMI_SKY[a], HEMI_SKY[b], t);
     hemi.color.setRGB(hs[0], hs[1], hs[2]);
     hemi.intensity = lerp(0.62, 0.66, clamp((s + 0.45) / 0.8, 0, 1)) * (1 - rk * 0.25) * (pixelMode ? 1.3 : 1);
@@ -6120,6 +6282,7 @@ const R3 = (function () {
     if (spriteMat) spriteMat.uniforms.uLight.value.set(lerp(1, 0.4, nightK) * (1 - rk * 0.15), lerp(1, 0.45, nightK) * (1 - rk * 0.15), lerp(1, 0.68, nightK) * (1 - rk * 0.1));
     const wk = clamp((s + 0.45) / 0.8, 0, 1);
     waterMat.color.setRGB(lerp(0.08, 0.25, wk), lerp(0.14, 0.56, wk), lerp(0.3, 0.84, wk));
+    { const sk = lerp(0.22, 1, wk); waterMat.specular.setRGB(0.435 * sk, 0.56 * sk, 0.66 * sk); }
     lampHead.material.color.setRGB(lerp(0.45, 1.0, nightK), lerp(0.45, 0.9, nightK), lerp(0.47, 0.6, nightK));
     lampGlow.material.opacity = nightK * 0.36;
   }
@@ -6466,7 +6629,7 @@ const R3 = (function () {
     const d = city.dirty;
     if (d.terrain) { buildTerrain(); rebuildFog(); d.terrain = false; d.fog = false; }
     if (d.fog) { rebuildFog(); d.fog = false; }
-    if (d.roads.size) { rampCache = null; deckCache = null; connCache = null; refreshRibbons(d.roads); junctionCache = null; signalCache = null; sigArms.clear(); sigCtl.clear(); pedWant.clear(); for (const ci of d.roads) rebuildRoadChunk(ci); d.roads.clear(); rebuildBridges(); rebuildHighwaySigns(); }
+    if (d.roads.size) { rampCache = null; deckCache = null; connCache = null; refreshRibbons(d.roads); junctionCache = null; signalCache = null; sideCache = null; sigArms.clear(); sigCtl.clear(); pedWant.clear(); for (const ci of d.roads) rebuildRoadChunk(ci); d.roads.clear(); rebuildBridges(); rebuildHighwaySigns(); }
     if (d.lamps) { rebuildLamps(); d.lamps = false; lists = null; }
     if (d.zones) { rebuildZones(); d.zones = false; }
     if (d.trees) { rebuildTrees(); d.trees = false; }
@@ -6495,7 +6658,36 @@ const R3 = (function () {
   return { init, resize, setCity, setStyle, setShadows, setQuality, frame, pickTile, setCursor, setRect, setOverlay, pan, rotate, zoom, centerOn, getCam, setCam,
     setMode, canStartAt, setInput, addLook, getSpeedKmh, getPlayerTile, takeTravel, capture, getMode: () => mode,
     setGhost, setCoverage, setTiles, setRain, getRain: () => weather.rain, agentCounts: () => ({ vehicles: agents.length, people: peds.length }), debugZoom: v => { minDist = v; }, carSpots: () => agents.filter(a => a.px !== undefined).map(a => [a.px, a.pz, a.spec]), debugPark: n => { const L = refreshLists(-99); lists = null; for (const pk of L.parks) for (let k = 0; k < (n || 4); k++) { const c = newPed([pk.r, pk.r], 'park', null, pk.b, L.res[0] || null); if (k % 2 && pk.b.kind === 'playground') { c.kid = true; c.size = 0.65; } c.state = 'act'; c.lx = pk.b.x - HW + 0.2 + Math.random() * 0.6; c.lz = pk.b.z - HH + 0.2 + Math.random() * 0.6; c.act = pickActivity(c, pk.b); peds.push(c); } return L.parks.map(p => [p.b.kind, p.b.x, p.b.z]).concat(L.stadiums.map(p => ['stadium', p.b.x, p.b.z])); }, trafficStats: () => { let st = 0, mv = 0, blk = 0; for (const a of agents) { if (a.state === 'wait' || a.state === 'parked') continue; if ((a.v || 0) < 0.05) { st++; if ((a.block || 0) > 2) blk++; } else mv++; } const acts = {}; for (const c of peds) { const k = c.state === 'act' ? c.act.kind : c.state; acts[k] = (acts[k] || 0) + 1; } for (const a of agents) if (a.pass && a.pass.length) acts.onbus = (acts.onbus || 0) + a.pass.length; let ov = 0; const live = agents.filter(a => a.px !== undefined && a.state !== 'arrive' && a.state !== 'curb' && !(a.fadeIn < 0.9)); acts.curb = agents.filter(a => a.state === 'curb').length; acts.cits = citStats(); { const e = entryIdx(), ty = {}; let fromE = 0; for (const a of agents) { const k = a.type + ':' + a.state; ty[k] = (ty[k] || 0) + 1; if (a.state === 'go' && a.path[0] === e) fromE++; } acts.types = ty; acts.fromEntry = fromE; } acts.signals = signals.length; acts.pedHold = peds.filter(c => c.holdT > 0).length; acts.pedCross = peds.filter(c => c.crossK > 0).length; for (let i = 0; i < live.length; i++) for (let j = i + 1; j < live.length; j++) { const a = live[i], o = live[j], dx = o.px - a.px, dz = o.pz - a.pz, hx = Math.sin(a.rotY), hz = Math.cos(a.rotY), al = Math.abs(dx * hx + dz * hz), sd = Math.abs(dx * hz - dz * hx); if (al < (vLen(a) + vLen(o)) / 2 * 0.8 && sd < 0.14) { ov++; (acts.pairs = acts.pairs || []).push([a, o].map(q => `${q.type}/${q.state}/s${q.seg}of${q.path.length}/t${q.t.toFixed(2)}/v${(q.v || 0).toFixed(2)}/g${q.ghost > 0 ? 1 : 0}/f${q.force > 0 ? 1 : 0}/blk${(q.blockAll || 0).toFixed(0)}/L${q.lane}/r${city.road[q.path[q.seg]]}/${q.path[q.seg]}>${q.path[q.seg + 1]}`).join('  |  ')); } } acts.overlaps = ov; acts.why = {}; for (const a of agents) if ((a.v || 0) < 0.05 && a.state !== 'wait' && a.state !== 'parked') acts.why[a.why || '?'] = (acts.why[a.why || '?'] || 0) + 1; acts.ghosts = agents.filter(a => a.ghost > 0).length; acts.lanes = [agents.filter(a => a.lane === 0).length, agents.filter(a => a.lane === 1).length]; const L = lists || {}; acts.withRide = peds.filter(c => c.ride).length; acts.buses = agents.filter(a => a.spec === 'bus').length; acts.stops = (L.busStops || []).length; acts.metros = (L.metros || []).length; acts.long = peds.filter(c => c.path.length > rideMin).length; return { cars: agents.length, moving: mv, stopped: st, blocked: blk, peds: peds.length, acts }; }, poseTest: (side, ped) => { const L = refreshLists(-99); lists = null; let best = null; for (let k = 0; k < 40 && L.res.length > 1; k++) { const p = bfsPath(rnd(L.res).r, rnd(L.jobs.length ? L.jobs : L.res).r); if (!p || p.length < 4) continue; let turns = 0; for (let q = 2; q < p.length; q++) if (p[q] - p[q - 1] !== p[q - 1] - p[q - 2]) turns++; if (!best || turns > best.turns) best = { p, turns }; } if (!best) return null; const c = { path: best.p, seg: 0, t: 0, speed: 1, state: 'go' }; let last = null, maxStep = 0, maxRot = 0, n = 0, minStep = 9; for (;;) { const q = agentPose(c, side, 0.01, !ped); if (q === 'end' || !q || n++ > 20000) break; if (last) { minStep = Math.min(minStep, Math.hypot(q.x - last.x, q.z - last.z)); maxStep = Math.max(maxStep, Math.hypot(q.x - last.x, q.z - last.z)); let dr = Math.abs(q.rot - last.rot); if (dr > Math.PI) dr = 2 * Math.PI - dr; maxRot = Math.max(maxRot, dr); } last = q; } return { turns: best.turns, len: best.p.length, minStep: +minStep.toFixed(4), maxStep: +maxStep.toFixed(4), maxRotDeg: +(maxRot * 57.3).toFixed(1) }; }, debugStep: (dt, n, rm) => { if (rm) rideMin = rm; for (let k = 0; k < n; k++) updateAgents(dt); }, debugPath: (p, n) => { for (let k = 0; k < (n || 3); k++) { const a = addAgent(k % 3 === 2 ? 'truck' : 'car', k % 2 ? p.slice().reverse() : p); if (a) { a.seg = 1 + k; a.t = 0.3; a.fadeIn = 1; } const c = newPed(k % 2 ? p : p.slice().reverse(), 'visit', null, null, null); c.seg = 1 + k; c.t = 0.6; peds.push(c); } updateAgents(0.001); return agents.length + '/' + peds.length; }, hubStep: (dt, n) => { for (let i = 0; i < n; i++) updateHubs(dt, i * dt); return [...hubs.values()].map(h => ({ k: h.kind, phase: h.phase, s: h.s && +h.s.toFixed(1), L: h.L && +h.L.toFixed(1), off: h.off, n: h.pts && h.pts.length, cruise: h.cruise, x: h.x, z: h.z, ox: h.ox, oz: h.oz, wd: h.x !== undefined && city.terrain[Math.floor(h.z + HH) * W + Math.floor(h.x + HW)], wo: h.ox !== undefined && city.terrain[Math.floor(h.oz + HH) * W + Math.floor(h.ox + HW)], TW: Sim.T.WATER })); }, pickCit, citInfo, followCit, citStats, sigSpots: () => signals.map(g => [g.x, g.z]), fireworks, pedSpots: () => peds.filter(c => c.px !== undefined).map(c => [c.px, c.pz]),
-    poseProbe: (path, side, dt, steps, car) => { const c = { path, seg: 0, t: 0, speed: 1, v: 1, state: 'go' }, out = []; for (let k = 0; k < steps; k++) { const p = agentPose(c, side, dt, car !== false); if (!p || p === 'end') break; out.push([+p.x.toFixed(3), +p.z.toFixed(3), +p.rot.toFixed(3), c.seg, +c.t.toFixed(3)]); } return out; },
+    trafDiag: reset => { const o = { n: 0, stuck: 0, why: {}, kinds: {}, ctx: {}, ev: Object.assign({}, tEv), sigAdj: 0 };
+      for (let i = 0; i < N; i++) if (isSignal(i)) { const x = i % W; for (const j of [i + 1, i + W]) if (j < N && (j !== i + 1 || x < W - 1) && isSignal(j) && city.roadConn(i, j)) o.sigAdj++; }
+      for (const a of agents) { if (a.state !== 'go' && a.state !== 'return') continue; o.n++; if ((a.v || 0) >= 0.05 || (a.blockAll || 0) < 6) continue; o.stuck++;
+        const w = a.why || '?'; o.why[w] = (o.why[w] || 0) + 1; o.kinds[a.type] = (o.kinds[a.type] || 0) + 1;
+        const A = a.path[a.seg], B = a.path[a.seg + 1], C = a.path[a.seg + 2], P = a.seg > 0 ? a.path[a.seg - 1] : -1; let c = a.t < 0.5 ? (isJunction(A) ? (isSignal(A) ? 'inSig' : 'inJ') : 'mid') : (isJunction(B) ? (isSignal(B) ? 'toSig' : 'toJ') : 'mid');
+        if (C === A || (a.t < 0.5 && P === B)) c += '+uturn'; if (isSignal(B) && [B + 1, B - 1, B + W, B - W].some(j => j >= 0 && j < N && isSignal(j) && city.roadConn(B, j))) c += '+adjSig'; o.ctx[c] = (o.ctx[c] || 0) + 1;
+        if (w.startsWith('gap')) { let h = a; const seen = new Set([a]); for (let q = 0; q < 60; q++) { const nx = h.gapBy; if (!nx || seen.has(nx)) { if (nx) h = { cyc: true, type: 'CYCLE', state: '', why: '', path: h.path, seg: h.seg, t: h.t }; break; } seen.add(nx); h = nx; if (!(h.why || '').startsWith('gap') || (h.state !== 'go' && h.state !== 'return')) break; }
+          const A3 = h.path[h.seg], B3 = h.path[h.seg + 1], C3 = h.path[h.seg + 2]; const hk = h === a ? 'self' : `${h.type}:${h.state}:${h.why || '-'}:${h.t < 0.5 ? (isJunction(A3) ? 'inJ' : 'mid') : (isJunction(B3) ? 'toJ' : 'mid')}${C3 === A3 ? '+U' : ''}${h.dockOut ? '+dockOut' : ''}${h.dock ? '+dock' : ''}${h.unN > 0 ? '+unload' : ''}${h.pk < 1 ? '+parking' : ''}${h.fadeIn < 1 ? '+fadeIn' : ''}`; o.heads = o.heads || {}; o.heads[hk] = (o.heads[hk] || 0) + 1; } }
+      if (reset) { for (const k in tEv) tEv[k] = 0; tEv.vw = {}; } return o; },
+    jamRun: (box, target, steps, dt, mix) => {
+      const [x0, z0, x1, z1] = box, roads = []; for (let z = z0; z <= z1; z++) for (let x = x0; x <= x1; x++) { const i = z * W + x; if (city.road[i] && city.road[i] !== 3) roads.push(i); }
+      const R = (() => { let s = 12345; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+      const jam = window.__jam || (window.__jam = new Set()); let done = 0, vanished = 0, spawned = 0, stuckT = 0, vSum = 0, vN = 0, maxStuck = 0, uturns = 0, pulls = 0, passes = 0;
+      for (const k in tEv) tEv[k] = 0;
+      for (let st = 0; st < steps; st++) {
+        if (st % 6 === 0 && jam.size < target) for (let q = 0; q < 3; q++) { const f = roads[Math.floor(R() * roads.length)], t = roads[Math.floor(R() * roads.length)]; if (f === t) continue; const p = carPath(f, t); if (!p || p.length < 5) continue;
+          const trk = R() < (mix || 0.3); const a = addAgent(trk ? 'truck' : 'car', p, trk ? { back: f, waitTime: 3 } : {}); if (a) { a.fadeIn = 1; jam.add(a); spawned++; } }
+        updateAgents(dt);
+        const live = new Set(agents); let stuckNow = 0;
+        for (const a of jam) { if (!live.has(a)) { jam.delete(a); if (a.vanished) vanished++; else done++; continue; } if (a.state === 'go' || a.state === 'return') { vSum += a.v || 0; vN++; if ((a.v || 0) < 0.05 && (a.blockAll || 0) > 5) stuckNow++; if (a.passT) passes++; } if (a.pull === 1 && a.state === 'wait') pulls++; if (a.seg + 2 < a.path.length && a.path[a.seg + 2] === a.path[a.seg] && a.t > 0.5) uturns++; }
+        if (stuckNow > maxStuck) maxStuck = stuckNow; stuckT += stuckNow;
+      }
+      const where = {}; for (const a of jam) if ((a.state === 'go' || a.state === 'return') && (a.v || 0) < 0.05 && (a.blockAll || 0) > 3) { const T = a.path[a.t < 0.5 ? a.seg : a.seg + 1], k = `${T % W - x0},${((T / W) | 0) - z0}:${a.why || '-'}${a.ghost > 0 ? 'G' : ''}`; where[k] = (where[k] || 0) + 1; }
+      return { where, spawned, done, vanished, live: jam.size, avgV: +(vSum / Math.max(1, vN)).toFixed(3), stuckAvg: +(stuckT / steps).toFixed(2), maxStuck, ev: Object.assign({}, tEv), sig: (() => { let n = 0; for (let i = 0; i < N; i++) if (isSignal(i)) n++; return n; })(), heads: signals.length, pullFrames: pulls, passFrames: passes, uturnFrames: uturns };
+    },
+    sideSpots: () => { if (!sideCache) buildSide(); const out = []; for (let i = 0; i < N; i++) if (sideCache[i]) out.push([i % W, (i / W) | 0, sideCache[i]]); return out; },
+    clusterSpots: () => { isSignal(0); return [...sigClu.values()].filter(c => c.tiles.length > 1).map(c => c.tiles.map(t => [t % W, (t / W) | 0])); },
+    pullSpots: () => agents.filter(a => a.pull === 1 && a.state === 'wait' && a.px !== undefined).map(a => [a.px, a.pz, a.rotY, a.type]),
+    uturnSpots: () => agents.filter(a => a.px !== undefined && a.seg + 2 < a.path.length && a.path[a.seg + 2] === a.path[a.seg] && a.t > 0.5).map(a => [a.px, a.pz, a.rotY, a.type]),
+    poseProbe: (path, side, dt, steps, car) => { const c = { path, seg: 0, t: 0, speed: 1, v: 1, state: 'go' }, out = []; for (let k = 0; k < steps; k++) { const p = agentPose(c, side, dt, car !== false); if (!p || p === 'end') break; out.push([+p.x.toFixed(3), +p.z.toFixed(3), +p.rot.toFixed(3), c.seg, +c.t.toFixed(3), +p.y.toFixed(3)]); } return out; },
     ribTiles: () => { if (!ribCache) buildRibbons(); return [...ribCache.keys()]; },
     getTod: () => tod, setTod: v => { tod = v; }, STYLES, OVERLAYS, isMobile, get styleName() { return styleName; }, get pixelReady() { return pixelReady; }, get pixelMode() { return pixelMode; } };
 })();
@@ -6654,7 +6846,7 @@ const Snd = (function () {
 (function () {
   'use strict';
   const $ = s => document.querySelector(s);
-  const APP_VERSION = {"v":38,"date":"2026-11-16","notes":["Ruas em curva: toque no começo e no fim da rua; se não estiverem alinhados, ela sai em curva. O botão ⌒ na barra troca entre curva, curva invertida, reta inclinada e esquina.","Ao emendar ruas, a curva nova continua no sentido em que a anterior terminou.","Diagonais e curvas aparecem lisas, sem degraus, com calçada, meio-fio, faixa no meio e postes acompanhando. Avenidas em curva mantêm o canteiro central e as faixas.","Esquinas isoladas ficam arredondadas, com calçada no canto de fora.","Carros e pedestres seguem a curva de verdade, na mão certa e na calçada.","Noite mais clara: dá para ver a cidade, e os postes iluminam mais.","Versões 36 e 37: ampliações com efeito, tela de entrada, pontes de verdade e rodovia nova."]};
+  const APP_VERSION = {"v":39,"date":"2026-11-17","notes":["Curvas só onde você usa a ferramenta de curva: o resto das ruas volta a ficar reto como antes. Curvas feitas na versão 38 precisam ser redesenhadas.","Ponte em curva: a curva (ou reta inclinada) pode passar por cima da água, com pilares, guarda-corpo e rampa acompanhando.","Zoom afastado sem a névoa vermelha/escura, e o reflexo da lua na água ficou mais suave.","Semáforos colados (dois cruzamentos vizinhos) agora funcionam como um só: quem entrou atravessa tudo, sem travar no meio.","Ruas desenhadas lado a lado viram duas vias separadas, com calçada no meio, em vez de um cruzamento a cada quadra.","Caminhões, vans, viaturas e visitas encostam no meio-fio para parar, e os carros passam ao lado. Na rua estreita, só ultrapassam com a contramão livre.","Retorno no meio da rua só quando não dá para contornar a quadra, e esperando a contramão ficar livre.","Fila de sinal não buzina nem some mais: só conta como travado quem está parado sem motivo."]};
   const VER = (typeof APP_VERSION !== 'undefined' && APP_VERSION) || { v: 0, date: '', notes: [] };
   const verDate = () => { const p = String(VER.date || '').split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : ''; };
   const { City, DEFS, HAND, TERRA, ROADS, ISSUE_TIPS, ZONE_NAMES, LEVEL_NAMES, ZSTAT, MISSIONS, ACHIEVEMENTS, SCENARIOS, T, Z, W, H, PARCEL, PX } = Sim;
@@ -6911,14 +7103,16 @@ const Snd = (function () {
     const i = c.idx(a.x, a.z); if (!c.road[i]) return null; const ns = []; for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const x = a.x + dx, z = a.z + dz; if (c.inb(x, z) && c.roadConn(i, c.idx(x, z))) ns.push(dx ? 'x' : 'z'); }
     return ns.length === 1 ? ns[0] : null;
   }
-  function shapeTiles(pd, b) {
+  // traçado da rua entre A e B: formato, sentido de saída e o registro guardado na cidade (só curva e reta inclinada)
+  function lineSpec(pd, b) {
     const a = pd.a; b = b || pd.b || pd.a; const shape = pd.shape || state.lineShape || 'curve';
-    if (a.x === b.x || a.z === b.z) return Sim.roadShape(a.x, a.z, b.x, b.z, 'L', true);
+    if (a.x === b.x || a.z === b.z) return { a, b, shape: 'L', sx: true, rec: null };
     const dirIn = pd.dirIn || lineDirIn(state.city, a), auto = dirIn ? dirIn === 'x' : Math.abs(b.x - a.x) >= Math.abs(b.z - a.z);
-    if (shape === 'diag') return Sim.roadShape(a.x, a.z, b.x, b.z, 'diag');
-    if (shape === 'L') return Sim.roadShape(a.x, a.z, b.x, b.z, 'L', auto);
-    return Sim.roadShape(a.x, a.z, b.x, b.z, 'curve', shape === 'curve2' ? !auto : auto);
+    if (shape === 'L') return { a, b, shape: 'L', sx: auto, rec: null };
+    const sh = shape === 'diag' ? 'diag' : 'curve', sx = shape === 'curve2' ? !auto : auto;
+    return { a, b, shape: sh, sx, rec: { ax: a.x, az: a.z, bx: b.x, bz: b.z, shape: sh, sx } };
   }
+  function shapeTiles(pd, b) { const sp = lineSpec(pd, b); return Sim.roadShape(sp.a.x, sp.a.z, sp.b.x, sp.b.z, sp.shape, sp.sx); }
   function pendingTiles(pd) {
     if (pd.mode === 'line') return shapeTiles(pd);
     if (pd.mode === 'rect') return rectTiles(pd.a, pd.b || pd.a);
@@ -7015,6 +7209,7 @@ const Snd = (function () {
     if (!info.ok) { if (info.reason) { toast(info.reason, 'warn', 2500); sfx('error'); } return; }
     if (pd.mode === 'place') { placeNow(pd.tool, pd.a.x, pd.a.z); clearPending(); return; }
     const tl = pendingTiles(pd), done = applyTiles(pd.tool, tl);
+    if (done && pd.mode === 'line') { const sp = lineSpec(pd); if (sp.rec) state.city.markCurve(tl, sp.rec); }
     const end = pd.b || pd.a, p2 = tl.length > 1 ? tl[tl.length - 2] : null, dirIn = p2 ? (p2.x !== end.x ? 'x' : 'z') : null;
     clearPending();
     if (pd.mode === 'line' && done) { state.pending = { mode: 'line', tool: pd.tool, a: end, b: null, chain: true, dirIn }; showPending(); }
