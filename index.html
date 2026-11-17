@@ -2916,7 +2916,8 @@ const R3 = (function () {
     const r = Sim.mulberry32(L.seed ^ 0x3c6ef372), fake = Object.assign({}, L, { w: g.w, d: g.d }), rot = L.kind === 'promenade' ? shoreRot(L.x, L.z, g.w, g.d) : FLAT_COMBO[L.kind] ? 0 : bRot(fake);
     const LW = rot % 2 ? g.d : g.w, LD = rot % 2 ? g.w : g.d, cx = L.x - HW + g.w / 2, cz = L.z - HH + g.d / 2, x = cx - LW / 2, z = cz - LD / 2, X1 = x + LW, Z1 = z + LD;
     const fh = st.floorH, roofC = cellUV('roof'), tb = new GeoBuilder(), meta = { top: 0.5, emit: [] }, n = g.n, zc = z + LD / 2, xc = x + LW / 2;
-    const heli = (hx, hy, hz, rad) => { cylinder(tb, hx, hz, rad, hy, hy + 0.012, 14, [0.36, 0.37, 0.4], [0.36, 0.37, 0.4]); cylinder(tb, hx, hz, rad * 0.82, hy + 0.012, hy + 0.016, 14, [0.95, 0.95, 0.95], [0.3, 0.31, 0.34]); solidBox(tb, hx - rad * 0.3, hy + 0.016, hz - rad * 0.38, hx - rad * 0.2, hy + 0.02, hz + rad * 0.38, [0.96, 0.96, 0.96]); solidBox(tb, hx + rad * 0.2, hy + 0.016, hz - rad * 0.38, hx + rad * 0.3, hy + 0.02, hz + rad * 0.38, [0.96, 0.96, 0.96]); solidBox(tb, hx - rad * 0.2, hy + 0.016, hz - rad * 0.05, hx + rad * 0.2, hy + 0.02, hz + rad * 0.05, [0.96, 0.96, 0.96]); };
+    const pads = [];
+    const heli = (hx, hy, hz, rad) => { pads.push([hx, hy, hz]); cylinder(tb, hx, hz, rad, hy, hy + 0.012, 14, [0.36, 0.37, 0.4], [0.36, 0.37, 0.4]); cylinder(tb, hx, hz, rad * 0.82, hy + 0.012, hy + 0.016, 14, [0.95, 0.95, 0.95], [0.3, 0.31, 0.34]); solidBox(tb, hx - rad * 0.3, hy + 0.016, hz - rad * 0.38, hx - rad * 0.2, hy + 0.02, hz + rad * 0.38, [0.96, 0.96, 0.96]); solidBox(tb, hx + rad * 0.2, hy + 0.016, hz - rad * 0.38, hx + rad * 0.3, hy + 0.02, hz + rad * 0.38, [0.96, 0.96, 0.96]); solidBox(tb, hx - rad * 0.2, hy + 0.016, hz - rad * 0.05, hx + rad * 0.2, hy + 0.02, hz + rad * 0.05, [0.96, 0.96, 0.96]); };
     const flag = (fx, fz, col) => { solidBox(tb, fx - 0.012, 0, fz - 0.012, fx + 0.012, 0.9, fz + 0.012, [0.8, 0.8, 0.82]); solidBox(tb, fx + 0.012, 0.74, fz - 0.005, fx + 0.24, 0.9, fz + 0.005, col); };
     const lot = (x0, z0, x1, z1, cars) => { tb.top(x0, z0, x1, z1, 0.011, roofC, [0.33, 0.34, 0.37]); const k = Math.max(1, Math.floor((x1 - x0 - 0.08) / 0.2)); for (let i = 0; i <= k; i++) tb.top(x0 + 0.04 + i * 0.2, z0 + 0.04, x0 + 0.055 + i * 0.2, z1 - 0.04, 0.013, roofC, [0.9, 0.9, 0.9]); for (let i = 0; i < k; i++) if (r() < cars) { const gg = new GeoBuilder(); parkedCar(gg, x0 + 0.145 + i * 0.2, (z0 + z1) / 2, r, Math.min(0.78, (z1 - z0 - 0.06) / 0.36)); tb.merge(gg, 0, 0, 0, 0.012); } };
     const ctx = { x, z, X1, Z1, LW, LD, xc, zc, n, r, fh, meta, cx, cz, rot };
@@ -3133,6 +3134,8 @@ const R3 = (function () {
       }
     }
     gb.merge(tb, cx, cz, rot, L.h * TH);
+    // helipontos em coordenadas do mundo (mesma rotação do merge), para os helicópteros pousarem
+    if (pads.length) { const rr = ((rot | 0) % 4 + 4) % 4; meta.pads = pads.map(([px, py, pz]) => { let ux = px - cx, uz = pz - cz; for (let q = 0; q < rr; q++) { const t = uz; uz = -ux; ux = t; } return { x: ux + cx, y: py + L.h * TH + 0.016, z: uz + cz, kind: L.kind }; }); }
     return meta;
   }
   // ----- complexos ampliados: metrô, aterro, reciclagem, termelétrica, parque eólico e parque de diversões -----
@@ -3412,7 +3415,7 @@ const R3 = (function () {
         const hx = x + 1, hz = z + 0.7, red = [0.88, 0.18, 0.18];
         solidBox(tb, hx - 0.3, h, hz - 0.08, hx + 0.3, h + 0.05, hz + 0.08, red);
         solidBox(tb, hx - 0.08, h, hz - 0.3, hx + 0.08, h + 0.05, hz + 0.3, red);
-        meta.top = h; break;
+        meta.padL = [hx, h + 0.05, hz]; meta.top = h; break;
       }
       case 'bus': {
         const post = [0.45, 0.47, 0.5];
@@ -3609,6 +3612,7 @@ const R3 = (function () {
       default: { solidBox(tb, x + 0.2, 0, z + 0.2, x + s - 0.2, 0.4, z + s - 0.2, [0.6, 0.6, 0.6]); }
     }
     gb.merge(tb, cx, cz, rot, b.h * TH);
+    if (meta.padL) { const [px, py, pz] = meta.padL, rr = ((rot | 0) % 4 + 4) % 4; let ux = px - cx, uz = pz - cz; for (let q = 0; q < rr; q++) { const t = uz; uz = -ux; ux = t; } meta.pads = [{ x: ux + cx, y: py + b.h * TH, z: uz + cz, kind: b.kind }]; delete meta.padL; }
     return meta;
   }
 
@@ -3887,6 +3891,18 @@ const R3 = (function () {
       hat: mkInst(join([tint(new THREE.CylinderGeometry(0.0235, 0.027, 0.014, 9, 1).translate(0, 0.019, -0.001), 1, 1, 1), tint(new THREE.BoxGeometry(0.036, 0.004, 0.02).translate(0, 0.013, 0.03), 0.8, 0.8, 0.8)]), pm(), PEDMAX, true),
       dog: mkInst(join([tint(new THREE.BoxGeometry(0.03, 0.028, 0.07).translate(0, 0.036, 0), 1, 1, 1), tint(new THREE.BoxGeometry(0.026, 0.026, 0.03).translate(0, 0.058, 0.045), 1, 1, 1), tint(new THREE.BoxGeometry(0.012, 0.01, 0.014).translate(0, 0.052, 0.066), 0.25, 0.2, 0.2), tint(new THREE.BoxGeometry(0.008, 0.014, 0.006).translate(-0.01, 0.076, 0.04), 0.6, 0.55, 0.5), tint(new THREE.BoxGeometry(0.008, 0.014, 0.006).translate(0.01, 0.076, 0.04), 0.6, 0.55, 0.5), tint(new THREE.BoxGeometry(0.007, 0.03, 0.007).translate(0, 0.06, -0.04).rotateX(-0.5), 1, 1, 1)].concat([[-0.01, 0.025], [0.01, 0.025], [-0.01, -0.025], [0.01, -0.025]].map(([lx, lz]) => tint(new THREE.BoxGeometry(0.008, 0.024, 0.008).translate(lx, 0.012, lz), 0.85, 0.85, 0.85)))), pm(), PEDMAX, true),
       longHair: mkInst(tint(new THREE.SphereGeometry(0.026, 9, 6, 0, Math.PI * 2, 0, Math.PI).scale(1, 1.25, 0.62).translate(0, -0.016, -0.012), 1, 1, 1, true), pm(), PEDMAX, true),
+      // bicicleta: rodas e pneus escuros, quadro na cor de cada ciclista
+      bike: mkInst(join([
+        tint(new THREE.TorusGeometry(0.03, 0.0045, 5, 14).rotateY(Math.PI / 2).translate(0, 0.0345, -0.05), 0.1, 0.1, 0.11),
+        tint(new THREE.TorusGeometry(0.03, 0.0045, 5, 14).rotateY(Math.PI / 2).translate(0, 0.0345, 0.05), 0.1, 0.1, 0.11),
+        tint(new THREE.BoxGeometry(0.005, 0.005, 0.072).rotateX(-0.12).translate(0, 0.07, 0.006), 1, 1, 1),
+        tint(new THREE.BoxGeometry(0.005, 0.005, 0.066).rotateX(0.62).translate(0, 0.05, 0.016), 1, 1, 1),
+        tint(new THREE.BoxGeometry(0.005, 0.05, 0.005).rotateX(-0.25).translate(0, 0.06, -0.012), 1, 1, 1),
+        tint(new THREE.BoxGeometry(0.005, 0.005, 0.05).translate(0, 0.0345, -0.026), 1, 1, 1),
+        tint(new THREE.BoxGeometry(0.005, 0.068, 0.005).rotateX(0.3).translate(0, 0.068, 0.04), 0.75, 0.75, 0.78),
+        tint(new THREE.BoxGeometry(0.044, 0.005, 0.005).translate(0, 0.1, 0.05), 0.15, 0.15, 0.16),
+        tint(new THREE.BoxGeometry(0.014, 0.006, 0.026).translate(0, 0.088, -0.018), 0.12, 0.12, 0.12),
+      ]), pm(), 120, true),
     };
     ballMesh = mkInst(new THREE.SphereGeometry(0.014, 8, 6), new THREE.MeshLambertMaterial({ color: 0xffffff }), 4);
     pedMesh.torso.castShadow = true;
@@ -4866,6 +4882,52 @@ const R3 = (function () {
       }
     }
     for (const [id, h] of hubs) if (!alive.has(id)) { scene.remove(h.mesh); hubs.delete(id); }
+  }
+  // helicópteros: chegam de longe, pousam no heliponto do hospital ou da polícia, esperam e vão embora
+  const helis = []; let heliMats = null;
+  function makeHeli(kind) {
+    if (!heliMats) heliMats = { hospital: new THREE.MeshLambertMaterial({ color: 0xe8e6e1 }), police: new THREE.MeshLambertMaterial({ color: 0x1f3a6b }), stripe: new THREE.MeshLambertMaterial({ color: 0xc8202a }), dark: new THREE.MeshLambertMaterial({ color: 0x24272c }), glass: new THREE.MeshLambertMaterial({ color: 0x8fc4e8 }), blade: new THREE.MeshLambertMaterial({ color: 0x3a3d42 }) };
+    const M = heliMats, g = new THREE.Group(), body = M[kind] || M.hospital;
+    const cab = new THREE.Mesh(new THREE.SphereGeometry(0.075, 12, 9).scale(0.85, 0.8, 1.35), body); cab.position.set(0, 0.07, 0.02); g.add(cab);
+    const win = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.5).scale(0.9, 0.85, 1.2).rotateX(1.25), M.glass); win.position.set(0, 0.085, 0.07); g.add(win);
+    const band = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.022, 0.12), kind === 'police' ? M.dark : M.stripe); band.position.set(0, 0.06, -0.01); g.add(band);
+    const boom = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.022, 0.24, 6).rotateX(Math.PI / 2), body); boom.position.set(0, 0.085, -0.19); g.add(boom);
+    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.07, 0.045), kind === 'police' ? M.dark : M.stripe); fin.position.set(0, 0.11, -0.3); g.add(fin);
+    for (const sx of [-1, 1]) { const sk = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.008, 0.2), M.dark); sk.position.set(sx * 0.055, 0.004, 0.02); g.add(sk); const st = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.03, 0.006), M.dark); st.position.set(sx * 0.05, 0.018, 0.05); g.add(st); const st2 = st.clone(); st2.position.z = -0.03; g.add(st2); }
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.03, 6), M.dark); mast.position.set(0, 0.14, 0.02); g.add(mast);
+    const rotor = new THREE.Group(); rotor.position.set(0, 0.157, 0.02); for (let k = 0; k < 4; k++) { const bl = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.004, 0.02).translate(0.15, 0, 0), M.blade); bl.rotation.y = k * Math.PI / 2; rotor.add(bl); } g.add(rotor);
+    const tr = new THREE.Group(); tr.position.set(0.012, 0.11, -0.3); for (let k = 0; k < 2; k++) { const bl = new THREE.Mesh(new THREE.BoxGeometry(0.004, 0.07, 0.012), M.blade); bl.rotation.x = k * Math.PI / 2; tr.add(bl); } g.add(tr);
+    g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+    g.scale.setScalar(1.3); scene.add(g);
+    return { g, rotor, tr };
+  }
+  function updateHelis(dt, force) {
+    if (!(dt > 0)) return;
+    // de vez em quando um voo novo, para um heliponto livre
+    if (helis.length < 3 && (force || (Math.random() < dt * 0.03 && nightK < 0.85))) {
+      const pads = []; for (const [id, m] of bmeta) if (m && m.pads && city.bmap.get(id)) for (const pd of m.pads) if (!helis.some(h => h.pad === pd)) pads.push(pd);
+      if (pads.length) {
+        const pd = rnd(pads), a = Math.random() * Math.PI * 2, R = 26 + Math.random() * 8, mk = makeHeli(pd.kind);
+        const h = { pad: pd, phase: 'in', mk, x: pd.x + Math.cos(a) * R, y: pd.y + 4.5, z: pd.z + Math.sin(a) * R, spin: 1, wait: 7 + Math.random() * 8, rot: 0 };
+        helis.push(h);
+      }
+    }
+    for (let k = helis.length - 1; k >= 0; k--) {
+      const h = helis[k], pd = h.pad, m = h.mk; let pitch = 0;
+      if (h.phase === 'in' || h.phase === 'out') {
+        const tx = h.phase === 'in' ? pd.x : h.ox, tz = h.phase === 'in' ? pd.z : h.oz, ty = h.phase === 'in' ? pd.y + 1.1 : pd.y + 4.5;
+        const dx = tx - h.x, dz = tz - h.z, d = Math.hypot(dx, dz), sp = Math.min(3.2, 0.6 + d * 0.5) * dt;
+        if (d > 0.02) { h.rot = Math.atan2(dx, dz); h.x += dx / d * Math.min(sp, d); h.z += dz / d * Math.min(sp, d); pitch = Math.min(0.22, d * 0.05); }
+        h.y += (ty - h.y) * Math.min(1, dt * 0.8);
+        if (h.phase === 'in' && d < 0.05) h.phase = 'down';
+        if (h.phase === 'out' && d < 0.5) { scene.remove(m.g); helis.splice(k, 1); continue; }
+      } else if (h.phase === 'down') { h.y = Math.max(pd.y, h.y - dt * 0.45); if (h.y <= pd.y) { h.phase = 'land'; } }
+      else if (h.phase === 'land') { h.wait -= dt; h.spin = Math.max(0.25, h.spin - dt * 0.25); if (h.wait <= 0) { h.phase = 'up'; } }
+      else if (h.phase === 'up') { h.spin = Math.min(1, h.spin + dt * 0.6); if (h.spin >= 1) { h.y += dt * 0.5; if (h.y > pd.y + 1.1) { const a = Math.random() * Math.PI * 2; h.ox = pd.x + Math.cos(a) * 30; h.oz = pd.z + Math.sin(a) * 30; h.phase = 'out'; } } }
+      if (!city.bmap.size) h.phase = 'out';
+      m.rotor.rotation.y += dt * 28 * h.spin; m.tr.rotation.x += dt * 40 * h.spin;
+      m.g.position.set(h.x, h.y, h.z); m.g.rotation.set(pitch, h.rot, 0, 'YXZ');
+    }
   }
   function updateHubs(dt, now) {
     for (const [, h] of hubs) {
@@ -6228,7 +6290,7 @@ const R3 = (function () {
     headMesh.count = tailMesh.count = nh; headMesh.instanceMatrix.needsUpdate = true; tailMesh.instanceMatrix.needsUpdate = true; if (tailMesh.instanceColor) tailMesh.instanceColor.needsUpdate = true;
     blinkMesh.count = nbk; blinkMesh.instanceMatrix.needsUpdate = true;
     lightsMesh.count = nl; lightsMesh.instanceMatrix.needsUpdate = true; if (lightsMesh.instanceColor) lightsMesh.instanceColor.needsUpdate = true;
-    updatePeds(dt, now); updateDoors(dt); updateHubs(dt, now); updateAmbient(dt, now);
+    updatePeds(dt, now); updateDoors(dt); updateHubs(dt, now); updateHelis(dt); updateAmbient(dt, now);
   }
 
   // pessoas: casa → trabalho, trabalho → casa, casa → parque (ficam um tempo) → casa, casa → compras
@@ -6335,8 +6397,12 @@ const R3 = (function () {
       if (!ride && L.busStops.length > 1) { const g = leg(L.busTile, 700); if (g) ride = { mode: 'bus', p1: g[0], p2: g[1], stopA: g[0][g[0].length - 1], stopB: g[1][0], to, dst, hops: 0 }; }
     }
     if (ride && ride.p1.length > 1) { const c = newPed(ride.p1, purpose, from, ride.mode === 'metro' ? ride.stA : atTile(L.busStops, ride.stopA), r); c.ride = ride; peds.push(c); return c; }
-    const c = newPed(path, purpose, from, to, r); peds.push(c); return c;
+    const c = newPed(path, purpose, from, to, r);
+    // trajeto médio, de dia e sem chuva: parte do pessoal vai de bicicleta (bem mais rápido que a pé)
+    if (path.length >= 6 && !c.kid && !c.dog && !c.skirt && weather.rain < 0.25 && nightK < 0.5 && Math.random() < (window.__bikeP || 0.22)) { c.bike = new THREE.Color(rnd(BIKES)); c.speed *= 2.6; c.bag = null; c.lat = 0.465; }
+    peds.push(c); return c;
   }
+  const BIKES = [0xd93a2b, 0x2b6fd9, 0x1f9d55, 0xf2b705, 0x222428, 0xe8e8e8, 0xff7a1a, 0x8a3fd1];
 
   // ----- atividades nos locais de lazer -----
   const BENCHES = { park: [[0.73, 0.66], [0.27, 0.34]], plaza: [[0.5, 0.2], [0.5, 0.8], [0.2, 0.5], [0.8, 0.5]], promenade: [[0.5, 0.29]] };
@@ -6503,7 +6569,7 @@ const R3 = (function () {
       if (k < 0 && peds.length > target + 60) k = peds.findIndex(c => !c.cit && !c.tourist && c.state === 'walk');
       if (k >= 0) peds.splice(k, 1);
     }
-    let m = 0; const opt = { extra: 0, skirt: 0, hat: 0, longHair: 0, dog: 0 };
+    let m = 0; const opt = { extra: 0, skirt: 0, hat: 0, longHair: 0, dog: 0, bike: 0 };
     const PM = pedMesh;
     let nu = 0; const rainy = weather.rain > 0.25;
     if (!umbMesh) { umbMesh = new THREE.InstancedMesh(new THREE.ConeGeometry(0.075, 0.035, 8), new THREE.MeshLambertMaterial({ color: 0xffffff }), 300); umbMesh.setColorAt(0, UMB_C[0]); umbMesh.count = 0; umbMesh.frustumCulled = false; scene.add(umbMesh); }
@@ -6513,11 +6579,13 @@ const R3 = (function () {
       if (rainy && c.path && nu < 300 && !pose.sit && (c.ph * 7) % 1 < 0.72) { dummy.position.set(p.x, p.y + 0.215 * (c.size || 1), p.z); dummy.rotation.set(0, 0, 0); dummy.scale.set(1, 1, 1); dummy.updateMatrix(); umbMesh.setMatrixAt(nu, dummy.matrix); umbMesh.setColorAt(nu, UMB_C[Math.floor(c.ph * 3) % UMB_C.length]); nu++; }
       const S = c.size || 1, step = (pose.run ? 15 : 9) / Math.sqrt(S), ph = now * step + c.ph;
       let legA = 0, legB = 0, armA = 0, armB = 0, by = p.y, lean = pose.lean || 0;
-      if (pose.sit) { legA = legB = -1.42; armA = armB = -0.45; by -= 0.052 * S; }
+      if (pose.bike) { const pd = c.pedal || 0; legA = -0.95 + Math.sin(pd) * 0.55; legB = -0.95 - Math.sin(pd) * 0.55; armA = armB = -1.05; by += 0.04 * S; lean = 0.2; }
+      else if (pose.sit) { legA = legB = -1.42; armA = armB = -0.45; by -= 0.052 * S; }
       else if (pose.walk || pose.run) { const sw = Math.sin(ph) * (pose.run ? 1.0 : 0.6); legA = sw; legB = -sw; armA = -sw * 0.85; armB = sw * 0.85; by += Math.abs(Math.sin(ph)) * (pose.run ? 0.011 : 0.006) * S; if (pose.run) lean = 0.16; }
       if (pose.armsUp) { const u = pose.sit ? 1 : Math.sin(now * 3 + c.ph) * 0.5 + 0.5; armA = armB = -0.4 - u * 2.5; }
       if (pose.gesture) armB = -0.7 + Math.sin(now * 5 + c.ph) * 0.45;
       const rx = Math.cos(p.rot), rz = -Math.sin(p.rot), fx = Math.sin(p.rot), fz = Math.cos(p.rot);
+      if (c.bike && (pose.bike || pose.walkBike) && opt.bike < 120) { const sx = pose.walkBike ? 0.055 : 0; dummy.position.set(p.x + rx * sx * S, p.y, p.z + rz * sx * S); dummy.rotation.set(0, p.rot, 0, 'YXZ'); dummy.scale.set(S, S, S); dummy.updateMatrix(); PM.bike.setMatrixAt(opt.bike, dummy.matrix); PM.bike.setColorAt(opt.bike++, c.bike); }
       const put = (mesh, idx, ox, oy, oz, rxA, col) => { const lz = oz + (oy - 0.07) * Math.sin(lean); dummy.position.set(p.x + (rx * ox + fx * lz) * S, by + oy * S, p.z + (rz * ox + fz * lz) * S); dummy.rotation.set(rxA + lean, p.rot, 0, 'YXZ'); dummy.scale.set(S, S, S); dummy.updateMatrix(); mesh.setMatrixAt(idx, dummy.matrix); mesh.setColorAt(idx, col); };
       put(PM.torso, m, 0, 0.105, 0, 0, c.shirt); put(PM.head, m, 0, 0.17, 0, 0, c.skin); put(PM.hair, m, 0, 0.17, 0, 0, c.hair);
       put(PM.legL, m, -0.012, 0.07, 0, legA, c.pants); put(PM.legR, m, 0.012, 0.07, 0, legB, c.pants);
@@ -6535,7 +6603,7 @@ const R3 = (function () {
     const walkLane = new Map();
     for (const c of peds) { if (c.state !== 'walk' || c.seg >= c.path.length - 1) continue; const key = c.path[c.seg] * N + c.path[c.seg + 1]; let l = walkLane.get(key); if (!l) { l = []; walkLane.set(key, l); } l.push(c); }
     if (dt > 0) for (const [key, l] of walkLane) { const A = Math.floor(key / N), B = key % N, opp = walkLane.get(B * N + A); if (!opp) continue; for (const c of l) for (const o of opp) { if ((o.sg || 1) === (c.sg || 1)) continue; const gap = (1 - o.t) - c.t; if (gap > 0 && gap < 0.16 && Math.abs(o.lat - c.lat) < 0.03) c.lat = clamp(c.lat + (c.sg || 1) * dt * 0.12, 0.42, 0.48); } }
-    for (const [, l] of walkLane) { if (l.length < 2) { l[0].slow = 1; continue; } for (const c of l) { let sl = 1; for (const o of l) { if (o === c) continue; const d = o.t - c.t; if (d > 0 && d < 0.075 && (o.sg || 1) === (c.sg || 1) && Math.abs(o.lat - c.lat) < 0.032) { sl = Math.min(sl, o.speed * (o.slow || 1) / c.speed * 0.95, 1); if (d < 0.045) sl = Math.min(sl, 0.3); } } c.slow = sl; if (sl < 1) { c.dodge = c.dodge || (c.lat < 0.45 ? 1 : -1); c.lat = clamp(c.lat + c.dodge * dt * 0.07, 0.42, 0.48); } else c.dodge = 0; } }
+    for (const [, l] of walkLane) { if (l.length < 2) { l[0].slow = 1; continue; } for (const c of l) { if (c.bike) { c.slow = 1; continue; } let sl = 1; for (const o of l) { if (o === c) continue; const d = o.t - c.t; if (d > 0 && d < 0.075 && (o.sg || 1) === (c.sg || 1) && Math.abs(o.lat - c.lat) < 0.032) { sl = Math.min(sl, o.speed * (o.slow || 1) / c.speed * 0.95, 1); if (d < 0.045) sl = Math.min(sl, 0.3); } } c.slow = sl; if (sl < 1) { c.dodge = c.dodge || (c.lat < 0.45 ? 1 : -1); c.lat = clamp(c.lat + c.dodge * dt * 0.07, 0.42, 0.48); } else c.dodge = 0; } }
     for (let k = peds.length - 1; k >= 0; k--) {
       const c = peds[k]; let p, pose = {};
       if (c.state === 'ride') {
@@ -6558,11 +6626,11 @@ const R3 = (function () {
       }
       if (c.state === 'move') {
         // trecho reto: da porta até a calçada, ou da calçada até a porta do destino
-        const v = c.mv, d = Math.hypot(v.x1 - v.x0, v.z1 - v.z0) || 0.001; v.k += dt * c.speed / d;
+        const v = c.mv, d = Math.hypot(v.x1 - v.x0, v.z1 - v.z0) || 0.001; v.k += dt * c.speed * (c.bike ? 0.4 : 1) / d;
         if (v.od && !v.opened && v.k >= (v.ok || 0)) { openDoor(v.od); v.opened = true; }
         const e = Math.min(1, v.k);
-        p = { x: lerp(v.x0, v.x1, e), y: lerp(v.y0, v.y1, e), z: lerp(v.z0, v.z1, e), rot: Math.atan2(v.x1 - v.x0, v.z1 - v.z0) }; pose.walk = dt > 0;
-        if (v.k >= 1) { if (v.then === 'walk') c.state = 'walk'; else if (v.then === 'gone' && c.ride && c.ride.mode === 'metro') { c.state = 'ride'; c.hidden = true; c.mv = null; c.rideT = 2.5 + (Math.abs((c.ride.stA.x - c.ride.stB.x)) + Math.abs(c.ride.stA.z - c.ride.stB.z)) / 7; continue; } else if (v.then === 'waitbus') { c.state = 'waitbus'; c.waitT = 0; c.prot = v.face; } else if (v.then === 'act') { c.state = 'act'; c.fr = null; c.lx = v.x1; c.lz = v.z1; c.act = pickActivity(c, c.to); } else { if (c.cit && c.cit.ent === c) citArrive(c.cit, c.to); peds.splice(k, 1); continue; } c.mv = null; }
+        p = { x: lerp(v.x0, v.x1, e), y: lerp(v.y0, v.y1, e), z: lerp(v.z0, v.z1, e), rot: Math.atan2(v.x1 - v.x0, v.z1 - v.z0) }; pose.walk = dt > 0; if (c.bike) pose.walkBike = true;
+        if (v.k >= 1) { if (v.then === 'walk') c.state = 'walk'; else if (v.then === 'gone' && c.ride && c.ride.mode === 'metro') { c.state = 'ride'; c.hidden = true; c.mv = null; c.rideT = 2.5 + (Math.abs((c.ride.stA.x - c.ride.stB.x)) + Math.abs(c.ride.stA.z - c.ride.stB.z)) / 7; continue; } else if (v.then === 'waitbus') { c.state = 'waitbus'; c.waitT = 0; c.prot = v.face; } else if (v.then === 'act') { c.state = 'act'; if (c.bike) { c.bike = null; c.speed /= 2.6; } c.fr = null; c.lx = v.x1; c.lz = v.z1; c.act = pickActivity(c, c.to); } else { if (c.cit && c.cit.ent === c) citArrive(c.cit, c.to); peds.splice(k, 1); continue; } c.mv = null; }
       } else if (c.state === 'act') {
         if (!city.bmap.get(c.to.id)) { peds.splice(k, 1); continue; }
         p = parkPose(c, dt, now); pose = p; pose.walk = !p.still && !p.run && !p.sit;
@@ -6607,6 +6675,7 @@ const R3 = (function () {
         }
         if (!p) { peds.splice(k, 1); continue; }
         p.y += 0.045; pose.walk = dt > 0 && c.state !== 'wait' && !hold; if (hurry && crossing) pose.run = true;
+        if (c.bike) { pose.bike = true; if (pose.walk) c.pedal = (c.pedal || 0) + dt * 9; pose.walk = pose.run = false; }
       }
       c.px = p.x; c.pz = p.z; c.py = p.y; if (c.state === 'walk') c.prot0 = p.rot;
       if (pixelMode) { drawPedSprite(c, p, !!pose.walk, now); continue; }
@@ -7066,7 +7135,7 @@ const R3 = (function () {
 
   return { init, resize, setCity, setStyle, setShadows, setQuality, frame, pickTile, setCursor, setRect, setOverlay, pan, rotate, zoom, centerOn, getCam, setCam,
     setMode, canStartAt, setInput, addLook, getSpeedKmh, getPlayerTile, takeTravel, capture, getMode: () => mode,
-    setGhost, setCoverage, setTiles, setRain, getRain: () => weather.rain, agentCounts: () => ({ vehicles: agents.length, people: peds.length }), debugZoom: v => { minDist = v; }, carSpots: () => agents.filter(a => a.px !== undefined).map(a => [a.px, a.pz, a.spec]), debugPark: n => { const L = refreshLists(-99); lists = null; for (const pk of L.parks) for (let k = 0; k < (n || 4); k++) { const c = newPed([pk.r, pk.r], 'park', null, pk.b, L.res[0] || null); if (k % 2 && pk.b.kind === 'playground') { c.kid = true; c.size = 0.65; } c.state = 'act'; c.lx = pk.b.x - HW + 0.2 + Math.random() * 0.6; c.lz = pk.b.z - HH + 0.2 + Math.random() * 0.6; c.act = pickActivity(c, pk.b); peds.push(c); } return L.parks.map(p => [p.b.kind, p.b.x, p.b.z]).concat(L.stadiums.map(p => ['stadium', p.b.x, p.b.z])); }, trafficStats: () => { let st = 0, mv = 0, blk = 0; for (const a of agents) { if (a.state === 'wait' || a.state === 'parked') continue; if ((a.v || 0) < 0.05) { st++; if ((a.block || 0) > 2) blk++; } else mv++; } const acts = {}; for (const c of peds) { const k = c.state === 'act' ? c.act.kind : c.state; acts[k] = (acts[k] || 0) + 1; } for (const a of agents) if (a.pass && a.pass.length) acts.onbus = (acts.onbus || 0) + a.pass.length; let ov = 0; const live = agents.filter(a => a.px !== undefined && a.state !== 'arrive' && a.state !== 'curb' && !(a.fadeIn < 0.9)); acts.curb = agents.filter(a => a.state === 'curb').length; acts.cits = citStats(); { const e = entryIdx(), ty = {}; let fromE = 0; for (const a of agents) { const k = a.type + ':' + a.state; ty[k] = (ty[k] || 0) + 1; if (a.state === 'go' && a.path[0] === e) fromE++; } acts.types = ty; acts.fromEntry = fromE; } acts.signals = signals.length; acts.pedHold = peds.filter(c => c.holdT > 0).length; acts.pedCross = peds.filter(c => c.crossK > 0).length; for (let i = 0; i < live.length; i++) for (let j = i + 1; j < live.length; j++) { const a = live[i], o = live[j], dx = o.px - a.px, dz = o.pz - a.pz, hx = Math.sin(a.rotY), hz = Math.cos(a.rotY), al = Math.abs(dx * hx + dz * hz), sd = Math.abs(dx * hz - dz * hx); if (al < (vLen(a) + vLen(o)) / 2 * 0.8 && sd < 0.14) { ov++; (acts.pairs = acts.pairs || []).push([a, o].map(q => `${q.type}/${q.state}/s${q.seg}of${q.path.length}/t${q.t.toFixed(2)}/v${(q.v || 0).toFixed(2)}/g${q.ghost > 0 ? 1 : 0}/f${q.force > 0 ? 1 : 0}/blk${(q.blockAll || 0).toFixed(0)}/L${q.lane}/r${city.road[q.path[q.seg]]}/${q.path[q.seg]}>${q.path[q.seg + 1]}`).join('  |  ')); } } acts.overlaps = ov; acts.why = {}; for (const a of agents) if ((a.v || 0) < 0.05 && a.state !== 'wait' && a.state !== 'parked') acts.why[a.why || '?'] = (acts.why[a.why || '?'] || 0) + 1; acts.ghosts = agents.filter(a => a.ghost > 0).length; acts.lanes = [agents.filter(a => a.lane === 0).length, agents.filter(a => a.lane === 1).length]; const L = lists || {}; acts.withRide = peds.filter(c => c.ride).length; acts.buses = agents.filter(a => a.spec === 'bus').length; acts.stops = (L.busStops || []).length; acts.metros = (L.metros || []).length; acts.long = peds.filter(c => c.path.length > rideMin).length; return { cars: agents.length, moving: mv, stopped: st, blocked: blk, peds: peds.length, acts }; }, poseTest: (side, ped) => { const L = refreshLists(-99); lists = null; let best = null; for (let k = 0; k < 40 && L.res.length > 1; k++) { const p = bfsPath(rnd(L.res).r, rnd(L.jobs.length ? L.jobs : L.res).r); if (!p || p.length < 4) continue; let turns = 0; for (let q = 2; q < p.length; q++) if (p[q] - p[q - 1] !== p[q - 1] - p[q - 2]) turns++; if (!best || turns > best.turns) best = { p, turns }; } if (!best) return null; const c = { path: best.p, seg: 0, t: 0, speed: 1, state: 'go' }; let last = null, maxStep = 0, maxRot = 0, n = 0, minStep = 9; for (;;) { const q = agentPose(c, side, 0.01, !ped); if (q === 'end' || !q || n++ > 20000) break; if (last) { minStep = Math.min(minStep, Math.hypot(q.x - last.x, q.z - last.z)); maxStep = Math.max(maxStep, Math.hypot(q.x - last.x, q.z - last.z)); let dr = Math.abs(q.rot - last.rot); if (dr > Math.PI) dr = 2 * Math.PI - dr; maxRot = Math.max(maxRot, dr); } last = q; } return { turns: best.turns, len: best.p.length, minStep: +minStep.toFixed(4), maxStep: +maxStep.toFixed(4), maxRotDeg: +(maxRot * 57.3).toFixed(1) }; }, debugStep: (dt, n, rm) => { if (rm) rideMin = rm; for (let k = 0; k < n; k++) updateAgents(dt); }, debugPath: (p, n) => { for (let k = 0; k < (n || 3); k++) { const a = addAgent(k % 3 === 2 ? 'truck' : 'car', k % 2 ? p.slice().reverse() : p); if (a) { a.seg = 1 + k; a.t = 0.3; a.fadeIn = 1; } const c = newPed(k % 2 ? p : p.slice().reverse(), 'visit', null, null, null); c.seg = 1 + k; c.t = 0.6; peds.push(c); } updateAgents(0.001); return agents.length + '/' + peds.length; }, hubStep: (dt, n) => { for (let i = 0; i < n; i++) updateHubs(dt, i * dt); return [...hubs.values()].map(h => ({ k: h.kind, phase: h.phase, s: h.s && +h.s.toFixed(1), L: h.L && +h.L.toFixed(1), off: h.off, n: h.pts && h.pts.length, cruise: h.cruise, x: h.x, z: h.z, ox: h.ox, oz: h.oz, wd: h.x !== undefined && city.terrain[Math.floor(h.z + HH) * W + Math.floor(h.x + HW)], wo: h.ox !== undefined && city.terrain[Math.floor(h.oz + HH) * W + Math.floor(h.ox + HW)], TW: Sim.T.WATER })); }, pickCit, citInfo, followCit, citStats, sigSpots: () => signals.map(g => [g.x, g.z]), fireworks, pedSpots: () => peds.filter(c => c.px !== undefined).map(c => [c.px, c.pz]),
+    setGhost, setCoverage, setTiles, setRain, getRain: () => weather.rain, agentCounts: () => ({ vehicles: agents.length, people: peds.length }), debugZoom: v => { minDist = v; }, carSpots: () => agents.filter(a => a.px !== undefined).map(a => [a.px, a.pz, a.spec]), debugPark: n => { const L = refreshLists(-99); lists = null; for (const pk of L.parks) for (let k = 0; k < (n || 4); k++) { const c = newPed([pk.r, pk.r], 'park', null, pk.b, L.res[0] || null); if (k % 2 && pk.b.kind === 'playground') { c.kid = true; c.size = 0.65; } c.state = 'act'; c.lx = pk.b.x - HW + 0.2 + Math.random() * 0.6; c.lz = pk.b.z - HH + 0.2 + Math.random() * 0.6; c.act = pickActivity(c, pk.b); peds.push(c); } return L.parks.map(p => [p.b.kind, p.b.x, p.b.z]).concat(L.stadiums.map(p => ['stadium', p.b.x, p.b.z])); }, trafficStats: () => { let st = 0, mv = 0, blk = 0; for (const a of agents) { if (a.state === 'wait' || a.state === 'parked') continue; if ((a.v || 0) < 0.05) { st++; if ((a.block || 0) > 2) blk++; } else mv++; } const acts = {}; for (const c of peds) { const k = c.state === 'act' ? c.act.kind : c.state; acts[k] = (acts[k] || 0) + 1; } for (const a of agents) if (a.pass && a.pass.length) acts.onbus = (acts.onbus || 0) + a.pass.length; let ov = 0; const live = agents.filter(a => a.px !== undefined && a.state !== 'arrive' && a.state !== 'curb' && !(a.fadeIn < 0.9)); acts.curb = agents.filter(a => a.state === 'curb').length; acts.cits = citStats(); { const e = entryIdx(), ty = {}; let fromE = 0; for (const a of agents) { const k = a.type + ':' + a.state; ty[k] = (ty[k] || 0) + 1; if (a.state === 'go' && a.path[0] === e) fromE++; } acts.types = ty; acts.fromEntry = fromE; } acts.signals = signals.length; acts.pedHold = peds.filter(c => c.holdT > 0).length; acts.pedCross = peds.filter(c => c.crossK > 0).length; for (let i = 0; i < live.length; i++) for (let j = i + 1; j < live.length; j++) { const a = live[i], o = live[j], dx = o.px - a.px, dz = o.pz - a.pz, hx = Math.sin(a.rotY), hz = Math.cos(a.rotY), al = Math.abs(dx * hx + dz * hz), sd = Math.abs(dx * hz - dz * hx); if (al < (vLen(a) + vLen(o)) / 2 * 0.8 && sd < 0.14) { ov++; (acts.pairs = acts.pairs || []).push([a, o].map(q => `${q.type}/${q.state}/s${q.seg}of${q.path.length}/t${q.t.toFixed(2)}/v${(q.v || 0).toFixed(2)}/g${q.ghost > 0 ? 1 : 0}/f${q.force > 0 ? 1 : 0}/blk${(q.blockAll || 0).toFixed(0)}/L${q.lane}/r${city.road[q.path[q.seg]]}/${q.path[q.seg]}>${q.path[q.seg + 1]}`).join('  |  ')); } } acts.overlaps = ov; acts.why = {}; for (const a of agents) if ((a.v || 0) < 0.05 && a.state !== 'wait' && a.state !== 'parked') acts.why[a.why || '?'] = (acts.why[a.why || '?'] || 0) + 1; acts.ghosts = agents.filter(a => a.ghost > 0).length; acts.lanes = [agents.filter(a => a.lane === 0).length, agents.filter(a => a.lane === 1).length]; const L = lists || {}; acts.withRide = peds.filter(c => c.ride).length; acts.buses = agents.filter(a => a.spec === 'bus').length; acts.stops = (L.busStops || []).length; acts.metros = (L.metros || []).length; acts.long = peds.filter(c => c.path.length > rideMin).length; return { cars: agents.length, moving: mv, stopped: st, blocked: blk, peds: peds.length, acts }; }, poseTest: (side, ped) => { const L = refreshLists(-99); lists = null; let best = null; for (let k = 0; k < 40 && L.res.length > 1; k++) { const p = bfsPath(rnd(L.res).r, rnd(L.jobs.length ? L.jobs : L.res).r); if (!p || p.length < 4) continue; let turns = 0; for (let q = 2; q < p.length; q++) if (p[q] - p[q - 1] !== p[q - 1] - p[q - 2]) turns++; if (!best || turns > best.turns) best = { p, turns }; } if (!best) return null; const c = { path: best.p, seg: 0, t: 0, speed: 1, state: 'go' }; let last = null, maxStep = 0, maxRot = 0, n = 0, minStep = 9; for (;;) { const q = agentPose(c, side, 0.01, !ped); if (q === 'end' || !q || n++ > 20000) break; if (last) { minStep = Math.min(minStep, Math.hypot(q.x - last.x, q.z - last.z)); maxStep = Math.max(maxStep, Math.hypot(q.x - last.x, q.z - last.z)); let dr = Math.abs(q.rot - last.rot); if (dr > Math.PI) dr = 2 * Math.PI - dr; maxRot = Math.max(maxRot, dr); } last = q; } return { turns: best.turns, len: best.p.length, minStep: +minStep.toFixed(4), maxStep: +maxStep.toFixed(4), maxRotDeg: +(maxRot * 57.3).toFixed(1) }; }, debugStep: (dt, n, rm) => { if (rm) rideMin = rm; for (let k = 0; k < n; k++) updateAgents(dt); }, debugPath: (p, n) => { for (let k = 0; k < (n || 3); k++) { const a = addAgent(k % 3 === 2 ? 'truck' : 'car', k % 2 ? p.slice().reverse() : p); if (a) { a.seg = 1 + k; a.t = 0.3; a.fadeIn = 1; } const c = newPed(k % 2 ? p : p.slice().reverse(), 'visit', null, null, null); c.seg = 1 + k; c.t = 0.6; peds.push(c); } updateAgents(0.001); return agents.length + '/' + peds.length; }, hubStep: (dt, n) => { for (let i = 0; i < n; i++) updateHubs(dt, i * dt); return [...hubs.values()].map(h => ({ k: h.kind, phase: h.phase, s: h.s && +h.s.toFixed(1), L: h.L && +h.L.toFixed(1), off: h.off, n: h.pts && h.pts.length, cruise: h.cruise, x: h.x, z: h.z, ox: h.ox, oz: h.oz, wd: h.x !== undefined && city.terrain[Math.floor(h.z + HH) * W + Math.floor(h.x + HW)], wo: h.ox !== undefined && city.terrain[Math.floor(h.oz + HH) * W + Math.floor(h.ox + HW)], TW: Sim.T.WATER })); }, pickCit, citInfo, followCit, citStats, sigSpots: () => signals.map(g => [g.x, g.z]), fireworks, pedSpots: () => peds.filter(c => c.px !== undefined).map(c => [c.px, c.pz]), debugBike: (p, n) => { for (let k = 0; k < n; k++) { const c = newPed(k % 2 ? p.slice().reverse() : p, 'visit', null, null, null); c.bike = new THREE.Color(rnd(BIKES)); c.speed *= 2.6; c.lat = 0.465; c.seg = k % (p.length - 2); c.t = 0.5; peds.push(c); } return peds.length; }, heliSpots: () => helis.map(h => [+h.x.toFixed(2), +h.y.toFixed(2), +h.z.toFixed(2), h.phase]), heliPads: () => { const o = []; for (const [, m] of bmeta) if (m && m.pads) o.push(...m.pads); return o; }, debugHeli: (n, adv) => { for (let k = 0; k < (n || 1); k++) updateHelis(0.016, true); for (let k = 0; k < (adv || 0); k++) updateHelis(0.05); return helis.map(h => [+h.x.toFixed(1), +h.y.toFixed(2), +h.z.toFixed(1), h.phase, h.pad.kind]); }, bikeSpots: () => peds.filter(c => c.bike && c.px !== undefined).map(c => [c.px, c.pz, c.state]),
     trafDiag: reset => { const o = { n: 0, stuck: 0, why: {}, kinds: {}, ctx: {}, ev: Object.assign({}, tEv), sigAdj: 0 };
       for (let i = 0; i < N; i++) if (isSignal(i)) { const x = i % W; for (const j of [i + 1, i + W]) if (j < N && (j !== i + 1 || x < W - 1) && isSignal(j) && city.roadConn(i, j)) o.sigAdj++; }
       for (const a of agents) { if (a.state !== 'go' && a.state !== 'return') continue; o.n++; if ((a.v || 0) >= 0.05 || (a.blockAll || 0) < 6) continue; o.stuck++;
@@ -7264,7 +7333,7 @@ const Snd = (function () {
 (function () {
   'use strict';
   const $ = s => document.querySelector(s);
-  const APP_VERSION = {"v":44,"date":"2026-11-17","notes":["Conjuntos de prédios (polícia, bombeiros etc.) não voltam mais ao tamanho normal ao reabrir o jogo.","Cruzamentos: carro parado atravessado dentro do cruzamento sai em poucos segundos, sem travar todo mundo.","Ruas: \"esquina\" é o padrão de novo e as esquinas não viram mais curva sozinhas; curvas não passam mais por cima de prédios.","Trânsito: carros não fazem mais conversão/retorno no meio da rua; esperam a outra pista livre antes de cruzar.","Pontes: emenda da curva entre a terra e a ponte ficou lisa.","Orla emendada vira uma praia grande: calçadão, coqueiros, quiosques, guarda-sóis, salva-vidas e vôlei.","Os carros estacionam de verdade nos estacionamentos e o motorista vai a pé até o destino.","Universidade, escola, museu, zoológico e hospital recebem visitantes e estudantes na frente."]};
+  const APP_VERSION = {"v":45,"date":"2026-11-17","notes":["Ciclistas: parte das pessoas faz trajetos médios de bicicleta pela calçada (de dia e sem chuva); chegando ao destino, desce e empurra a bike até a porta.","Helicópteros: hospitais e centrais de polícia recebem voos que pousam no heliponto, esperam e decolam.","Conjuntos de prédios (polícia, bombeiros etc.) não voltam mais ao tamanho normal ao reabrir o jogo.","Cruzamentos: carro parado atravessado dentro do cruzamento sai em poucos segundos, sem travar todo mundo."]};
   const VER = (typeof APP_VERSION !== 'undefined' && APP_VERSION) || { v: 0, date: '', notes: [] };
   const verDate = () => { const p = String(VER.date || '').split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : ''; };
   const { City, DEFS, HAND, TERRA, ROADS, ISSUE_TIPS, ZONE_NAMES, LEVEL_NAMES, ZSTAT, MISSIONS, ACHIEVEMENTS, SCENARIOS, T, Z, W, H, PARCEL, PX } = Sim;
