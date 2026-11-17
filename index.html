@@ -449,7 +449,7 @@ const Sim = (function () {
   // ampliação: construções iguais encostadas e alinhadas viram um complexo (retângulo de até [largura, fundo] unidades),
   // com alcance maior, atendimento mais forte, manutenção menor e, nas usinas, mais produção
   const COMBO = { police: [4, 3], fire: [4, 3], parking: [4, 3], school: [3, 2], hospital: [3, 2], university: [3, 2], bus: [4, 2], metro: [3, 2], landfill: [3, 2], recycling: [3, 2],
-    park: [4, 4], plaza: [4, 4], garden: [4, 4], playground: [3, 3], fountain: [3, 3], solar: [3, 3], water: [4, 3], wind: [4, 4], coal: [3, 2], amusement: [2, 2] };
+    park: [4, 4], plaza: [4, 4], garden: [4, 4], playground: [3, 3], fountain: [3, 3], solar: [3, 3], water: [4, 3], wind: [4, 4], coal: [3, 2], amusement: [2, 2], promenade: [12, 12] };
   // limite das construções especiais: cresce com a população (um a mais a cada `per` habitantes)
   const maxOf = (kind, pop) => { const d = DEFS[kind]; if (!d || !d.max) return Infinity; return Math.max(d.max, d.per ? Math.floor((pop || 0) / d.per) : 0); };
   const comboBonus = n => { const k = Math.max(0, n - 1); return { R: Math.min(1.5, 1 + 0.12 * k), core: Math.min(0.75, 0.6 + 0.04 * k), w: Math.min(1.3, 1 + 0.1 * k), up: Math.max(0.7, 1 - 0.06 * k), out: Math.min(1.4, 1 + 0.08 * k) }; };
@@ -2406,7 +2406,7 @@ const R3 = (function () {
     cylinder(tb, tx, tz, rad * 0.3, hgt + 0.149, hgt + 0.15, segs, mul(g, 1.1));
   }
   function parkedCar(tb, px, pz, r, sc) {
-    const col = pick(PARKED, r), w = 0.048 * (sc || 1), l = 0.175 * (sc || 1);
+    const k = Math.min(1, (sc || 1) / 0.75), col = pick(PARKED, r), w = 0.08 * k, l = 0.172 * k;   // mesmo tamanho dos carros que andam
     solidBox(tb, px - w, 0.018, pz - l, px + w, 0.062, pz + l, col);
     solidBox(tb, px - w * 0.86, 0.062, pz - l * 0.55, px + w * 0.86, 0.098, pz + l * 0.4, [0.16, 0.2, 0.27]);
     solidBox(tb, px - w * 0.8, 0.098, pz - l * 0.5, px + w * 0.8, 0.103, pz + l * 0.35, col);
@@ -2830,7 +2830,7 @@ const R3 = (function () {
 
   /* ---------- complexos: construções iguais encostadas viram um prédio só, maior ---------- */
   // tipos com desenho próprio de complexo; os demais (metrô, aterro, reciclagem, eólicas, termelétrica) ganham só o efeito
-  const COMBO_VIS = { police: 1, fire: 1, parking: 1, school: 1, hospital: 1, university: 1, park: 1, plaza: 1, garden: 1, playground: 1, fountain: 1, bus: 1, solar: 1, water: 1, amusement: 1, metro: 1, landfill: 1, recycling: 1, coal: 1, wind: 1 };
+  const COMBO_VIS = { police: 1, fire: 1, parking: 1, school: 1, hospital: 1, university: 1, park: 1, plaza: 1, garden: 1, playground: 1, fountain: 1, bus: 1, solar: 1, water: 1, amusement: 1, metro: 1, landfill: 1, recycling: 1, coal: 1, wind: 1, promenade: 1 };
   const FLAT_COMBO = { park: 1, plaza: 1, garden: 1, playground: 1, fountain: 1, solar: 1, water: 1, wind: 1 };
   const comboRole = new Map(), chunkMates = new Map();
   function comboOf(b) { if (!COMBO_VIS[b.kind] || b.cons > 0 || !city || city.bmap.get(b.id) !== b) return null; return city.groupOf(b); }
@@ -2912,7 +2912,7 @@ const R3 = (function () {
     for (const oz of [-0.11, 0.11]) for (const ox of [-0.058, 0.05]) solidBox(tb, bx + ox, 0.005, bz + oz - 0.025, bx + ox + 0.008, 0.045, bz + oz + 0.025, [0.1, 0.1, 0.1]);
   }
   function genCombo(gb, L, g, st) {
-    const r = Sim.mulberry32(L.seed ^ 0x3c6ef372), fake = Object.assign({}, L, { w: g.w, d: g.d }), rot = FLAT_COMBO[L.kind] ? 0 : bRot(fake);
+    const r = Sim.mulberry32(L.seed ^ 0x3c6ef372), fake = Object.assign({}, L, { w: g.w, d: g.d }), rot = L.kind === 'promenade' ? shoreRot(L.x, L.z, g.w, g.d) : FLAT_COMBO[L.kind] ? 0 : bRot(fake);
     const LW = rot % 2 ? g.d : g.w, LD = rot % 2 ? g.w : g.d, cx = L.x - HW + g.w / 2, cz = L.z - HH + g.d / 2, x = cx - LW / 2, z = cz - LD / 2, X1 = x + LW, Z1 = z + LD;
     const fh = st.floorH, roofC = cellUV('roof'), tb = new GeoBuilder(), meta = { top: 0.5, emit: [] }, n = g.n, zc = z + LD / 2, xc = x + LW / 2;
     const heli = (hx, hy, hz, rad) => { cylinder(tb, hx, hz, rad, hy, hy + 0.012, 14, [0.36, 0.37, 0.4], [0.36, 0.37, 0.4]); cylinder(tb, hx, hz, rad * 0.82, hy + 0.012, hy + 0.016, 14, [0.95, 0.95, 0.95], [0.3, 0.31, 0.34]); solidBox(tb, hx - rad * 0.3, hy + 0.016, hz - rad * 0.38, hx - rad * 0.2, hy + 0.02, hz + rad * 0.38, [0.96, 0.96, 0.96]); solidBox(tb, hx + rad * 0.2, hy + 0.016, hz - rad * 0.38, hx + rad * 0.3, hy + 0.02, hz + rad * 0.38, [0.96, 0.96, 0.96]); solidBox(tb, hx - rad * 0.2, hy + 0.016, hz - rad * 0.05, hx + rad * 0.2, hy + 0.02, hz + rad * 0.05, [0.96, 0.96, 0.96]); };
@@ -2926,6 +2926,7 @@ const R3 = (function () {
       case 'recycling': comboRecycling(tb, ctx); break;
       case 'coal': comboCoal(tb, ctx); break;
       case 'wind': comboWind(tb, ctx); break;
+      case 'promenade': comboOrla(tb, ctx); break;
       case 'park': {     // parque municipal: gramado inteiro, caminho em laço, entradas, lago com borda de pedra e coreto
         const P = parkLayout(g), G = [0.5, 0.79, 0.41], PATH = [0.86, 0.8, 0.64], RIM = [0.72, 0.7, 0.64], WAT = [0.33, 0.6, 0.86], y = 0.013;
         tb.top(x + 0.02, z + 0.02, X1 - 0.02, Z1 - 0.02, 0.011, roofC, G);
@@ -3086,7 +3087,7 @@ const R3 = (function () {
         flag(x + 0.16, Z1 - 0.1, [0.9, 0.2, 0.2]); meta.top = th; break;
       }
       case 'parking': {  // até 3 vagas: um pátio só; a partir de 4: edifício-garagem com rampas e carros na cobertura
-        if (n < 4) { tb.top(x + 0.02, z + 0.02, X1 - 0.02, Z1 - 0.02, 0.011, roofC, [0.33, 0.34, 0.37]); const rows = Math.max(2, Math.round(LD / 0.5)); for (let j = 0; j < rows; j++) { const za = z + 0.08 + j * (LD - 0.16) / rows, zb = z + 0.08 + (j + 1) * (LD - 0.16) / rows - 0.06; const kk = Math.floor((LW - 0.2) / 0.2); for (let i = 0; i <= kk; i++) tb.top(x + 0.1 + i * 0.2, za, x + 0.115 + i * 0.2, zb, 0.013, roofC, [0.9, 0.9, 0.9]); for (let i = 0; i < kk; i++) if (r() < 0.62) { const gg = new GeoBuilder(); parkedCar(gg, x + 0.207 + i * 0.2, (za + zb) / 2, r, 0.74); tb.merge(gg, 0, 0, 0, 0.012); } }
+        if (n < 4) { tb.top(x + 0.02, z + 0.02, X1 - 0.02, Z1 - 0.02, 0.011, roofC, [0.33, 0.34, 0.37]); const rows = Math.max(2, Math.round(LD / 0.5)); for (let j = 0; j < rows; j++) { const za = z + 0.08 + j * (LD - 0.16) / rows, zb = z + 0.08 + (j + 1) * (LD - 0.16) / rows - 0.06; const kk = Math.floor((LW - 0.2) / 0.2); for (let i = 0; i <= kk; i++) tb.top(x + 0.1 + i * 0.2, za, x + 0.115 + i * 0.2, zb, 0.013, roofC, [0.9, 0.9, 0.9]); }
           solidBox(tb, x + 0.05, 0, Z1 - 0.07, x + 0.065, 0.3, Z1 - 0.055, [0.3, 0.3, 0.33]); solidBox(tb, x + 0.01, 0.3, Z1 - 0.075, x + 0.105, 0.42, Z1 - 0.05, [0.15, 0.4, 0.8]); meta.top = 0.2; break; }
         const decks = Math.min(5, 2 + Math.floor(n / 2)), dh = 0.2, x0 = x + 0.08, x1 = X1 - 0.08, z0 = z + 0.08, z1 = Z1 - 0.08, CON = [0.78, 0.78, 0.76], DKc = [0.2, 0.21, 0.24];
         for (let dkk = 0; dkk <= decks; dkk++) { const y = dkk * dh; if (dkk) solidBox(tb, x0, y - 0.025, z0, x1, y, z1, CON); if (dkk < decks) { solidBox(tb, x0 + 0.01, y, z0 + 0.01, x1 - 0.01, y + dh - 0.025, z1 - 0.01, DKc); } solidBox(tb, x0 - 0.008, y, z0 - 0.008, x1 + 0.008, y + 0.06, z0, CON); solidBox(tb, x0 - 0.008, y, z1, x1 + 0.008, y + 0.06, z1 + 0.008, CON); solidBox(tb, x0 - 0.008, y, z0, x0, y + 0.06, z1, CON); solidBox(tb, x1, y, z0, x1 + 0.008, y + 0.06, z1, CON); }
@@ -3164,6 +3165,45 @@ const R3 = (function () {
     const bump = (s, c, w) => { const q = ((s - c + 1.5) % 1 - 0.5) / w; return Math.exp(-q * q); }, N = Math.max(70, Math.round(per / 0.12));
     for (let k = 0; k < N; k++) { const s = k / N, [px, pz] = at(s * per); pts.push([px, 0.46 + 0.95 * bump(s, 0.1, 0.07) + 0.5 * bump(s, 0.3, 0.05) + 0.4 * bump(s, 0.5, 0.05) + 0.3 * bump(s, 0.66, 0.045) + 0.22 * bump(s, 0.86, 0.04), pz]); }
     o.coaster = pts; return o;
+  }
+  function palmTree(tb, px, pz, hgt, lean, r) {
+    for (let k = 0; k < 5; k++) { const y0 = hgt * k / 5, y1 = hgt * (k + 1) / 5, lx = lean * (k / 5) ** 1.6 * 3, lx1 = lean * ((k + 1) / 5) ** 1.6 * 3; solidBox(tb, px + Math.min(lx, lx1) - 0.014, y0, pz - 0.014, px + Math.max(lx, lx1) + 0.014, y1, pz + 0.014, [0.55, 0.42, 0.25]); }
+    const tx = px + lean * 3, tz = pz, g = [0.2, 0.55, 0.25];
+    for (let k = 0; k < 7; k++) { const a = k / 7 * Math.PI * 2 + r(), ca = Math.cos(a), sa = Math.sin(a), wx2 = -sa * 0.035, wz2 = ca * 0.035;
+      const A = [tx - wx2, hgt, tz - wz2], B = [tx + wx2, hgt, tz + wz2], C = [tx + ca * 0.13 + wx2, hgt + 0.03, tz + sa * 0.13 + wz2], D = [tx + ca * 0.13 - wx2, hgt + 0.03, tz + sa * 0.13 - wz2], E = [tx + ca * 0.24, hgt - 0.07, tz + sa * 0.24];
+      tb.quadOut(A, B, C, D, g, 0, 1, 0); tb.quadOut(B, A, D, C, mul(g, 0.75), 0, -1, 0); tb.triOut(D, C, E, mul(g, 1.1), 0, 1, 0); tb.triOut(C, D, E, mul(g, 0.7), 0, -1, 0); }
+  }
+  function beachUmbrella(tb, ux, uz, r, roofC) {
+    const UMB = [[0.9, 0.25, 0.25], [0.2, 0.55, 0.9], [1, 0.8, 0.2], [0.95, 0.5, 0.75], [0.2, 0.7, 0.55]], uc = pick(UMB, r);
+    solidBox(tb, ux - 0.005, 0.014, uz - 0.005, ux + 0.005, 0.2, uz + 0.005, [0.9, 0.9, 0.9]);
+    for (let k = 0; k < 8; k++) { const a0 = k / 8 * Math.PI * 2, a1 = (k + 1) / 8 * Math.PI * 2; tb.triOut([ux + Math.cos(a0) * 0.11, 0.17, uz + Math.sin(a0) * 0.11], [ux, 0.22, uz], [ux + Math.cos(a1) * 0.11, 0.17, uz + Math.sin(a1) * 0.11], k % 2 ? uc : [1, 1, 1], 0, 1, 0); }
+    solidBox(tb, ux + 0.03, 0.014, uz + 0.04, ux + 0.075, 0.035, uz + 0.14, pick(UMB, r)); tb.top(ux - 0.09, uz + 0.03, ux - 0.04, uz + 0.13, 0.017, roofC, pick(UMB, r));
+  }
+  // ----- orla emendada: praia grande com calçadão de ondas, coqueiros, quiosques e posto de salva-vidas (água em −Z) -----
+  function comboOrla(tb, c) {
+    const { x, z, X1, Z1, LW, n, r, meta } = c, roofC = cellUV('roof'), SAND = [0.94, 0.86, 0.63], WET = [0.78, 0.7, 0.52], STONE = [0.95, 0.94, 0.9], DARKW = [0.22, 0.22, 0.24];
+    const zc = Z1 - 0.3;      // começo do calçadão
+    tb.top(x, z, X1, zc, 0.014, roofC, SAND); tb.top(x, z, X1, z + 0.09, 0.0145, roofC, WET); tb.top(x, z - 0.015, X1, z + 0.012, 0.0148, roofC, [0.97, 0.98, 1]);
+    solidBox(tb, x, 0, zc, X1, 0.03, Z1, mul(STONE, 0.85)); tb.top(x, zc, X1, Z1, 0.031, roofC, STONE);
+    // ondas pretas e brancas do calçadão
+    const NW = Math.round(LW * 16), wz = u => zc + 0.15 + 0.055 * Math.sin(u * Math.PI * 2 * 2.5); for (let k = 0; k < NW; k++) { const xa = x + k / NW * LW, xb = x + (k + 1) / NW * LW; gStrip(tb, xa, wz(xa - x), xb, wz(xb - x), 0.011, 0.033, DARKW); }
+    solidBox(tb, x, 0, zc - 0.012, X1, 0.05, zc + 0.005, [0.85, 0.83, 0.78]);       // meio-fio entre areia e calçadão
+    for (let k = 0, m = Math.max(2, Math.round(LW)); k < m; k++) { const lx = x + (k + 0.5) * LW / m; solidBox(tb, lx - 0.008, 0.03, Z1 - 0.06, lx + 0.008, 0.38, Z1 - 0.044, [0.2, 0.22, 0.25]); solidBox(tb, lx - 0.03, 0.38, Z1 - 0.08, lx + 0.03, 0.41, Z1 - 0.03, [1, 0.95, 0.75]); }
+    for (let k = 0, m = Math.round(LW * 1.2); k < m; k++) { const px = x + (k + 0.5) * LW / m + (r() - 0.5) * 0.12; palmTree(tb, px, zc + 0.02, 0.42 + r() * 0.16, (r() - 0.5) * 0.12, r); }
+    // quiosques a cada 3 quadras, com mesinhas
+    for (let k = 0, m = Math.max(1, Math.floor(LW / 3)); k < m; k++) { const kx = x + (k + 0.5) * LW / m, kz = zc - 0.2; solidBox(tb, kx - 0.12, 0.014, kz - 0.08, kx + 0.12, 0.17, kz + 0.08, [0.95, 0.93, 0.86]); solidBox(tb, kx - 0.13, 0.12, kz + 0.08, kx + 0.13, 0.135, kz + 0.1, [0.3, 0.6, 0.85]); hipRoof(tb, kx - 0.16, kx + 0.16, kz - 0.11, kz + 0.11, 0.17, 0.09, [0.62, 0.45, 0.25], 0); for (const dx of [-0.3, 0.3]) { cylinder(tb, kx + dx, kz + 0.02, 0.04, 0.014, 0.06, 8, [0.95, 0.95, 0.95]); beachUmbrella(tb, kx + dx, kz + 0.02, r, roofC); } }
+    // guarda-sóis espalhados na areia
+    for (let k = 0, m = Math.round(LW * 2.2); k < m; k++) { const ux = x + 0.1 + r() * (LW - 0.2), uz = z + 0.15 + r() * 0.35; beachUmbrella(tb, ux, uz, r, roofC); }
+    // posto de salva-vidas e rede de vôlei
+    if (n >= 3) { const gx = x + LW * 0.62, gz = z + 0.3; for (const [ox, oz] of [[-0.05, -0.05], [0.05, -0.05], [-0.05, 0.05], [0.05, 0.05]]) solidBox(tb, gx + ox - 0.008, 0.014, gz + oz - 0.008, gx + ox + 0.008, 0.26, gz + oz + 0.008, [0.95, 0.95, 0.95]); solidBox(tb, gx - 0.07, 0.26, gz - 0.07, gx + 0.07, 0.36, gz + 0.07, [0.9, 0.2, 0.2]); hipRoof(tb, gx - 0.08, gx + 0.08, gz - 0.08, gz + 0.08, 0.36, 0.05, [0.95, 0.95, 0.95], 0); solidBox(tb, gx + 0.07, 0.36, gz - 0.004, gx + 0.075, 0.55, gz + 0.004, [0.6, 0.6, 0.62]); solidBox(tb, gx + 0.075, 0.48, gz - 0.003, gx + 0.17, 0.55, gz + 0.003, [0.95, 0.75, 0.15]); meta.top = Math.max(meta.top, 0.6); }
+    if (n >= 4) { const vx = x + LW * 0.25, vz = z + 0.32; for (const dx of [-0.2, 0.2]) solidBox(tb, vx + dx - 0.006, 0.014, vz - 0.006, vx + dx + 0.006, 0.2, vz + 0.006, [0.9, 0.9, 0.9]); tb.quadOut([vx - 0.2, 0.12, vz], [vx + 0.2, 0.12, vz], [vx + 0.2, 0.19, vz], [vx - 0.2, 0.19, vz], [0.95, 0.95, 0.95], 0, 0, 1); tb.quadOut([vx + 0.2, 0.12, vz], [vx - 0.2, 0.12, vz], [vx - 0.2, 0.19, vz], [vx + 0.2, 0.19, vz], [0.95, 0.95, 0.95], 0, 0, -1); }
+    meta.top = Math.max(meta.top, 0.6);
+  }
+  // lado da água de um retângulo de quadras (a frente local −Z fica para a água)
+  function shoreRot(x0, z0, w, d) {
+    const wt = (x, z) => city.inb(x, z) && city.terrain[city.idx(x, z)] === Sim.T.WATER, cnt = [0, 0, 0, 0];
+    for (let k = 0; k < w; k++) { if (wt(x0 + k, z0 + d)) cnt[0]++; if (wt(x0 + k, z0 - 1)) cnt[2]++; } for (let k = 0; k < d; k++) { if (wt(x0 + w, z0 + k)) cnt[1]++; if (wt(x0 - 1, z0 + k)) cnt[3]++; }
+    let side = 2, best = -1; for (let i = 0; i < 4; i++) if (cnt[i] > best) { best = cnt[i]; side = i; } return (side + 2) % 4;
   }
   function comboAmuse(tb, c) {
     const { x, z, X1, Z1, LW, LD, xc, n, r, meta } = c, roofC = cellUV('roof'), T = (x0, z0, x1, z1, y, col) => tb.top(x0, z0, x1, z1, y, roofC, col), lay = amuseLayout(LW, LD);
@@ -3487,7 +3527,6 @@ const R3 = (function () {
         base([0.33, 0.34, 0.37], 0.02);
         for (let k = 0; k < 4; k++) tb.top(x + 0.1 + k * 0.22, z + 0.1, x + 0.12 + k * 0.22, z + 0.45, 0.013, roofC, [0.9, 0.9, 0.9]);
         for (let k = 0; k < 4; k++) tb.top(x + 0.1 + k * 0.22, z + 0.55, x + 0.12 + k * 0.22, z + 0.9, 0.013, roofC, [0.9, 0.9, 0.9]);
-        for (let k = 0; k < 3; k++) for (const pz of [0.29, 0.71]) if (r() < 0.68) { const g = new GeoBuilder(); parkedCar(g, x + 0.22 + k * 0.22, z + pz, r, 0.78); tb.merge(g, 0, 0, 0, 0.012); }
         solidBox(tb, x + 0.05, 0, z + 0.48, x + 0.062, 0.2, z + 0.492, [0.3, 0.3, 0.33]); solidBox(tb, x + 0.02, 0.2, z + 0.44, x + 0.09, 0.3, z + 0.53, [0.15, 0.4, 0.8]);
         meta.top = 0.15; break;
       }
@@ -4022,7 +4061,7 @@ const R3 = (function () {
   let ribCache = null, ribSig = new Map(), curveSamp = new Map();
   const tcx = i => (i % W) - HW + 0.5, tcz = i => ((i / W) | 0) - HH + 0.5;
   function ribDeg(i) { const m = connMaskC(i); return (m & 1 ? 1 : 0) + (m & 2 ? 1 : 0) + (m & 4 ? 1 : 0) + (m & 8 ? 1 : 0); }
-  function ribEligible(i) { const t = city.road[i]; return (t === 1 || t === 2) && !!(city.curveOf && city.curveOf[i]) && (city.terrain[i] === T.WATER || !rampMaskC(i)) && ribDeg(i) === 2; }
+  function ribEligible(i) { const t = city.road[i]; return (t === 1 || t === 2) && !!(city.curveOf && city.curveOf[i]) && ribDeg(i) === 2; }
   function ribNbrs(i) { const m = connMaskC(i), o = []; if (m & 1) o.push(i + 1); if (m & 2) o.push(i - 1); if (m & 4) o.push(i + W); if (m & 8) o.push(i - W); return o; }
   const ribPiece = i => { if (!ribCache) buildRibbons(); return ribCache.get(i); };
   // traçado desenhado (em coordenadas do mundo), amostrado fino
@@ -4063,7 +4102,7 @@ const R3 = (function () {
       if (seen[i0] || !rd[i0] || !city.curveOf[i0] || !ribEligible(i0)) continue;
       const typ = rd[i0], member = j => j >= 0 && ribEligible(j) && rd[j] === typ;
       // quadra reta solta no meio de duas curvas (traçado feito em partes): entra na curva também, senão vira um degrau
-      const plain = j => j >= 0 && rd[j] === typ && (city.terrain[j] === T.WATER || !rampMaskC(j)) && ribDeg(j) === 2;
+      const plain = j => { if (j < 0 || rd[j] !== typ || ribDeg(j) !== 2) return false; const m = connMaskC(j); return m === 3 || m === 12; };   // só quadra reta; esquina desenhada fica esquina
       const step = (p, c) => { const ns = ribNbrs(c); return ns[0] === p ? ns[1] : ns[0]; };
       const walk = (from, to) => { const out = []; let p = from, c = to, g = 0;
         while (c !== i0 && g++ < 5000) {
@@ -4178,7 +4217,8 @@ const R3 = (function () {
     const M = RIB_M, av = pc.typ === 2, A = av ? 0.42 : 0.4, S = av ? 0.08 : 0.1, deck = pc.deck;
     const ASP = [0.27, 0.28, 0.31], WALK = [0.6, 0.59, 0.56], CURB = [0.44, 0.44, 0.43], DASH = [0.95, 0.82, 0.35], WHITE = [0.85, 0.85, 0.85], GRASS = [0.33, 0.58, 0.3], CON = [0.7, 0.7, 0.68], CONd = [0.5, 0.5, 0.5];
     const ys = []; for (let k = 0; k <= M; k++) ys.push(ribY(pc, k / M));
-    const at = (k, o, dy) => { const p = pc.pts[k], t = pc.tan[k], w = pc.w[k], kk = pc.kap[k]; let ow = o * w; if (ow * kk > 0.92) ow = Math.max(0.92 / kk, ow * 0.62); return [p[0] - t[1] * ow, ys[k] + dy, p[1] + t[0] * ow]; };
+    const at = (k, o, dy) => { const p = pc.pts[k], t = pc.tan[k], w = pc.w[k], kk = pc.kap[k]; let ow = o * w; if (ow * kk > 0.92) ow = Math.max(0.92 / kk, ow * 0.62); if (!deck && Math.abs(ow) > 0.3) for (let q = 0; q < 6; q++) { const tx2 = Math.floor(p[0] - t[1] * ow + HW), tz2 = Math.floor(p[1] + t[0] * ow + HH); if (tx2 < 0 || tz2 < 0 || tx2 >= W || tz2 >= H) break; const ti = tz2 * W + tx2; if (city.road[ti] || city.bld[ti] < 0) break; ow *= 0.88; }   // não invade o lote de um prédio
+      return [p[0] - t[1] * ow, ys[k] + dy, p[1] + t[0] * ow]; };
     const band = (o0, o1, dy, col, nrm) => { for (let k = 0; k < M; k++) gb.quadOut(at(k, o0, dy), at(k + 1, o0, dy), at(k + 1, o1, dy), at(k, o1, dy), col, 0, nrm || 1, 0); };
     const wall = (o, dy0, dy1, col, sg) => { for (let k = 0; k < M; k++) { const t = pc.tan[k], a0 = at(k, o, dy0), a1 = at(k + 1, o, dy0); gb.quadOut(a0, a1, at(k + 1, o, dy1), at(k, o, dy1), col, -t[1] * sg, 0, t[0] * sg); } };
     band(-A, A, 0.02, ASP);
@@ -5813,7 +5853,7 @@ const R3 = (function () {
     best.path = best.path.slice(0, best.seg + 1).concat(pp); best.job = { cit: c, from: c ? c.at : from, dest, destR: r1, stage: 0 };
     if (c) { c.ent = best; c.mode = 'de táxi'; } return true;
   }
-  function dockFrom(a, b) { if (a && b) { const d = doorOf(b); a.dock = { x: d.x, y: d.y, z: d.z, k: 0 }; } return a; }
+  function dockFrom(a, b) { if (a && b) { if (a.lotB === b && a.lotK >= 0) { const s = lotStalls(b)[a.lotK]; a.dock = { x: s.x, y: s.y, z: s.z, k: 0 }; const u = lotUse.get(b.id); if (u && u[a.lotK] === a) u[a.lotK] = null; a.lotB = null; a.lotK = -1; } else { const d = doorOf(b); a.dock = { x: d.x, y: d.y, z: d.z, k: 0 }; } } return a; }
   function rndCurb() { for (let k = 0; k < 8; k++) { const a = agents[Math.floor(Math.random() * agents.length)]; if (a && a.state === 'curb' && !a.pend) return a; } return null; }
   // pessoa andando em linha reta entre dois pontos (motorista entre o carro e a porta)
   function pedLine(x0, z0, y0, x1, z1, y1, tile) {
@@ -5837,11 +5877,34 @@ const R3 = (function () {
     c.mv = { x0: cd.x, z0: cd.z, y0, x1: s0.x, z1: s0.z, y1: s0.y + 0.045, k: 0, then: 'walk' }; c.state = 'move'; if (a.cit) c.cit = a.cit; peds.push(c);
   }
   // vai sair: o motorista vem do prédio até o carro; o carro só parte depois que ele embarca
+  // ----- estacionamento de verdade: o carro entra numa vaga do pátio e fica lá até o dono voltar -----
+  const lotUse = new Map();
+  // pátio que recebe carros: estacionamento sozinho ou pátio ampliado (até 3); o edifício-garagem guarda por dentro
+  function lotOf(b) { if (!b || b.kind !== 'parking' || b.cons > 0 || !alive(b)) return null; const g = comboOf(b); if (!g) return b; return g.n < 4 ? g.leader : null; }
+  function lotStalls(b) {
+    const g = comboOf(b), sig = g ? g.sig : '';
+    if (b._stalls && b._stallsR === sig) return b._stalls;
+    const out = [], y = b.h * TH + 0.012;
+    if (g) { const fake = Object.assign({}, b, { w: g.w, d: g.d }), rot = bRot(fake), LW = rot % 2 ? g.d : g.w, LD = rot % 2 ? g.w : g.d, cx = b.x - HW + g.w / 2, cz = b.z - HH + g.d / 2, x = cx - LW / 2, z = cz - LD / 2, rows = Math.max(2, Math.round(LD / 0.5)), kk = Math.floor((LW - 0.2) / 0.2);
+      for (let jr = 0; jr < rows; jr++) { const za = z + 0.08 + jr * (LD - 0.16) / rows, zb = z + 0.08 + (jr + 1) * (LD - 0.16) / rows - 0.06, hz = jr % 2 ? 1 : -1; for (let i2 = 0; i2 < kk; i2++) { const [wx, wz] = rotPt(x + 0.207 + i2 * 0.2, (za + zb) / 2, cx, cz, rot), [vx, vz] = rotPt(0, hz, 0, 0, rot); out.push({ x: wx, z: wz, y, rot: Math.atan2(vx, vz) }); } } }
+    else { const x = b.x - HW, z = b.z - HH, cx = x + 0.5, cz = z + 0.5, rot = bRot(b); for (const [pz, hz] of [[0.275, -1], [0.725, 1]]) for (let k = 0; k < 3; k++) { const [wx, wz] = rotPt(x + 0.21 + k * 0.22, z + pz, cx, cz, rot), [vx, vz] = rotPt(0, hz, 0, 0, rot); out.push({ x: wx, z: wz, y, rot: Math.atan2(vx, vz) }); } }
+    b._stalls = out; b._stallsR = sig; return out;
+  }
+  function freeStall(b) { const st = lotStalls(b); let u = lotUse.get(b.id); if (!u) { u = []; lotUse.set(b.id, u); } for (let k = 0; k < st.length; k++) { const o = u[k]; if (!o || o.lotB !== b || o.lotK !== k || agents.indexOf(o) < 0) return k; } return -1; }
+  function lotCenter(l) { const g = comboOf(l); return g ? [l.x + g.w / 2, l.z + g.d / 2] : [l.x + 0.5, l.z + 0.5]; }
+  function nearLot(px, pz) {
+    let best = null, bd = 2.6; const seen = new Set();
+    for (const b0 of city.buildings) { const b = lotOf(b0); if (!b || seen.has(b)) continue; seen.add(b); const [lx, lz] = lotCenter(b), d = Math.hypot(lx - HW - px, lz - HH - pz); if (d < bd && freeStall(b) >= 0) { bd = d; best = b; } }
+    return best;
+  }
+  // estacionamento perto do destino (com vaga livre): o carro vai direto para lá
+  function lotNearB(b) { if (!alive(b) || b.kind === 'parking' || Math.random() > 0.7) return null; const S = b.size || 1, bx = b.x + S / 2, bz = b.z + S / 2; let best = null, bd = 3.2; const seen = new Set(); for (const l0 of city.buildings) { const l = lotOf(l0); if (!l || seen.has(l)) continue; seen.add(l); const [lx, lz] = lotCenter(l), d = Math.hypot(lx - bx, lz - bz); if (d < bd && freeStall(l) >= 0) { bd = d; best = l; } } return best; }
   function startGarage(a, dest, destB) {
     const gb = a.gb, r0 = alive(gb) ? roadIdxOf(gb) : -1; if (r0 < 0 || r0 === dest) return false;
+    const lot = lotNearB(destB), lr = lot ? roadIdxOf(lot) : -1; if (lr >= 0 && lr !== r0) dest = lr;
     const p = carPath(r0, dest); if (!p || p.length < 2) return false;
     const l = laneMap.get(p[0] * N + p[1]); if (l && l.some(o => o.t < 0.8)) return false;
-    const plan = parkPlan(p); if (plan) { a.path = plan.path; takeSlot(a, plan); } else { a.path = p; a.slot = undefined; a.stopT = undefined; }
+    const plan = lr >= 0 && lr === dest ? null : parkPlan(p); if (plan) { a.path = plan.path; takeSlot(a, plan); } else { a.path = p; a.slot = undefined; a.stopT = undefined; }
     a.seg = 0; a.t = 0; a.state = 'go'; a.v = 0; a.block = a.blockAll = 0; a.leaving = false; a.px = undefined; a.lat = undefined; dockFrom(a, gb); a.destB = destB; a.gb = null; return true;
   }
   function callTrip(a, dest, destB) {
@@ -5850,14 +5913,15 @@ const R3 = (function () {
     if (d && d.same && d.dist < 1.15) { const c = pedLine(d.x + (d.ix || 0), d.z + (d.iz || 0), d.y, cd.x, cd.z, (a.py || d.y) + 0.045, tileIndexAt(a.px, a.pz)); if (c) { if (d.db) openDoor(d.db); if (a.cit) c.cit = a.cit; a.pend = { r: dest, b: destB }; a.boardT = d.dist / c.speed + 0.25; return; } }
     // carro mais longe: o dono vem pela calçada até a quadra do carro
     if (d && a.px !== undefined && peds.length < 280) { const r0 = roadIdxOf(d.b), tl = tileIndexAt(a.px, a.pz), pth = r0 >= 0 && tl >= 0 && r0 !== tl ? bfsPath(r0, tl) : null; if (pth && pth.length > 1 && pth.length <= 7) { const c = newPed(pth, 'visit', d.b, null, Math.random); if (a.cit) c.cit = a.cit; peds.push(c); a.pend = { r: dest, b: destB }; a.boardT = pth.length / c.speed + 2; return; } }
-    if (startTrip(a, dest, false)) a.destB = destB;
+    if (startTrip(a, dest, false, destB)) a.destB = destB;
   }
   // carro estacionado sai para um destino: entra na faixa quando ela está livre e já leva a vaga de chegada reservada
-  function startTrip(a, dest, leave) {
+  function startTrip(a, dest, leave, destB) {
+    const lot = leave ? null : lotNearB(destB), lr = lot ? roadIdxOf(lot) : -1; if (lr >= 0) dest = lr;
     const A = a.path[a.seg], B = a.path[a.seg + 1], p = carPath(B, dest, A); if (!p || !p.length) return false;
-    if (p.length > 1 && p[1] === A && Math.random() < 0.96) return false;                 // evita sair dando meia-volta
+    if (p.length > 1 && p[1] === A && ribNbrsV(B) > 1) return false;                 // não dá meia-volta no meio da rua (só no fim de rua sem saída)
     const path = [A].concat(p); if (path.length < 3) return false;
-    const plan = leave ? null : parkPlan(path);   // sem vaga na rua perto do destino: vai guardar o carro na garagem do prédio
+    const plan = leave || lr >= 0 ? null : parkPlan(path);   // sem vaga na rua perto do destino: vai guardar o carro na garagem do prédio
     const l = laneMap.get(A * N + B); if (l && l.some(o => o.t > a.t - 0.75 && o.t < a.t + 0.4)) return false;
     if (plan) takeSlot(a, plan); else { if (slotMap.get(a.slot) === a) slotMap.delete(a.slot); a.slot = undefined; a.stopT = undefined; a.leaving = !!leave; }
     a.path = plan ? plan.path : path; a.seg = 0; a.state = 'go'; a.v = 0; a.block = a.blockAll = 0; return true;
@@ -5880,6 +5944,14 @@ const R3 = (function () {
     const P = a.path, segs = [[B, A]]; if (C >= 0) segs.push([C, B]); const D = P[a.seg + 3]; if (C >= 0 && D !== undefined) segs.push([D, C]);
     for (const [u, v] of segs) { const l = laneMap.get(u * N + v); if (l) for (const o of l) if (movingCar(o, a)) return false; }
     return true;
+  }
+  function ribNbrsV(i) { const x = i % W, z = (i / W) | 0; let n = 0; if (x > 0 && vConn(i, i - 1)) n++; if (x < W - 1 && vConn(i, i + 1)) n++; if (z > 0 && vConn(i, i - W)) n++; if (z < H - 1 && vConn(i, i + W)) n++; return n; }
+  // entrar num lote do outro lado da rua cruza a contramão: espera ela ficar livre (até uns segundos)
+  function crossWait(a, dt) {
+    if (a.px === undefined || a.dockOut || a.back || a.loop || a.stopHalf || a.onFire) return false; const tb = a.type === 'car' && !a.leaving && a.state !== 'arrive' && alive(a.destB) ? a.destB : a.homeB && alive(a.homeB) ? a.homeB : null; if (!tb) return false;
+    const d = doorOf(tb), hx = Math.sin(a.rotY || 0), hz = Math.cos(a.rotY || 0); if ((d.x - a.px) * -hz + (d.z - a.pz) * hx > 0) return false;   // do lado da mão: entra direto
+    const n = a.path.length, X = a.path[n - 2], Y = a.path[n - 1]; if (X === undefined || uturnClear(X, Y, a)) { a.cwT = 0; return false; }
+    a.cwT = (a.cwT || 0) + dt; return a.cwT < 8;
   }
   function freePull(a) { if (a.pullSlots) { for (const k of a.pullSlots) if (slotMap.get(k) === a) slotMap.delete(k); a.pullSlots = null; } a.pull = 0; }
   function trafficPrep() {
@@ -6072,7 +6144,9 @@ const R3 = (function () {
     const counts = { car: 0, car2: 0, car3: 0, moto: 0, motoP: 0, van: 0, truck: 0, bus: 0 }; let nl = 0, nh = 0, nbk = 0;
     for (let k = agents.length - 1; k >= 0; k--) {
       const a = agents[k];
-      if (a.state === 'garage') { if (a.pend && dt > 0) { if (startGarage(a, a.pend.r, a.pend.b)) a.pend = null; else if ((a.pend.t = (a.pend.t || 0) + dt) > 10) a.pend = null; } continue; }
+      if (a.state === 'garage') { if (a.pend && dt > 0) { if (startGarage(a, a.pend.r, a.pend.b)) a.pend = null; else if ((a.pend.t = (a.pend.t || 0) + dt) > 10) a.pend = null; }
+        if (a.state === 'garage' && a.lotB && !pixelMode) { if (!alive(a.lotB)) { agents.splice(k, 1); continue; } const s2 = lotStalls(a.lotB)[a.lotK]; if (s2) { if (a.alt === undefined) a.alt = Math.random() < 0.5 ? 0 : Math.random() < 0.6 ? 1 : 2; const key = a.alt === 1 ? 'car2' : a.alt === 2 ? 'car3' : a.alt === 3 ? 'motoP' : a.spec, m = veh[key], idx = counts[key]; if (m && idx < VEH_CAP[key]) { dummy.position.set(s2.x, s2.y, s2.z); dummy.rotation.set(0, s2.rot, 0, 'YXZ'); dummy.scale.set(VS, VS, VS); dummy.updateMatrix(); m.body.setMatrixAt(idx, dummy.matrix); m.body.setColorAt(idx, a.color); m.detail.setMatrixAt(idx, dummy.matrix); counts[key] = idx + 1; } } }
+        continue; }
       // chegando: entra no lote do destino e some; saindo: surge do lote e entra na faixa
       if (a.state === 'arrive') { a.fade -= dt * 1.8; if (a.fade <= 0) { agents.splice(k, 1); continue; } }
       else if (a.fadeIn !== undefined && a.fadeIn < 1) a.fadeIn = Math.min(1, a.fadeIn + dt * 1.6);
@@ -6086,16 +6160,18 @@ const R3 = (function () {
       const fk = a.state === 'arrive' ? a.fade : a.fadeIn === undefined ? 1 : a.fadeIn, side = a.lat + (1 - fk) * (0.46 - a.lat), sc = (0.45 + 0.55 * fk) * VS;
       if (a.state === 'wait') { a.wait -= dt; if (a.wait <= 0) { if (a.back !== undefined && a.back !== null) {
         // volta: prefere dar a volta na quadra a retornar no meio da rua; se precisar retornar (ou sair do meio-fio), espera a vez
-        const Y = a.path[a.path.length - 1], X = a.path[a.path.length - 2], p = a.retP || carPath(Y, a.back, X, 16);
+        const Y = a.path[a.path.length - 1], X = a.path[a.path.length - 2], p = a.retP || carPath(Y, a.back, X, ribNbrsV(Y) > 1 ? 90 : 0);
         if (p && p.length > 1) { const ok = p[1] === X ? uturnClear(X, Y, a) : a.pull !== 1 || mergeClear(X, Y, a); if (!ok && (a.holdT = (a.holdT || 0) + 0.2) < 9) { a.retP = p; a.wait = 0.2; } else { freePull(a); relink(a, X, p); a.state = 'return'; a.back = null; a.stopHalf = false; a.retP = null; a.holdT = 0; } }
         else { freePull(a); agents.splice(k, 1); continue; } } else { a.state = 'go'; } } }
       if (a.state === 'parked') { if (!a.target || !a.target.burning) { const home = a.path[0]; const p = bfsPath(a.path[a.path.length - 1], home); if (p && p.length > 1) { relink(a, a.path[a.path.length - 2], p); a.state = 'return'; a.target = null; a.stopHalf = false; } else { agents.splice(k, 1); continue; } } }
       let p = agentPose(a, side, dt, true);
       if (p === 'end') {
-        if (a.dockOut) { const g = a.dockOut; g.k += dt / 1.1; if (g.k >= 1) { if (g.garage && alive(g.garage)) { a.state = 'garage'; a.gb = a.destB = g.garage; a.dockOut = null; a.px = undefined; a.v = 0; if (a.cit && a.cit.ent === a) citArrive(a.cit, g.garage); continue; } agents.splice(k, 1); continue; } const e = g.k * g.k * (3 - 2 * g.k); p = { x: lerp(g.x0, g.x, e), y: lerp(g.y0, g.y, e), z: lerp(g.z0, g.z, e), rot: g.k < 0.8 ? Math.atan2(g.x - g.x0, g.z - g.z0) : a.rotY, pitch: 0 }; }
+        if (a.dockOut) { const g = a.dockOut; g.k += dt / 1.1; if (g.k >= 1) { if (g.garage && alive(g.garage) && g.stall) { a.state = 'garage'; a.gb = g.garage; a.destB = alive(g.real) ? g.real : g.garage; a.dockOut = null; a.px = g.x; a.pz = g.z; a.py = g.y; a.rotY = g.stall.rot; a.v = 0; const dd = alive(g.real) ? gateOf(g.real, g.x, g.z) : null; if (dd && Math.hypot(dd.x - g.x, dd.z - g.z) < 2.8) { const w = pedLine(g.x, g.z, g.y, dd.x + (dd.ix || 0), dd.z + (dd.iz || 0), dd.y, tileIndexAt(g.x, g.z)); if (w && dd.db) { w.mv.od = dd.db; w.mv.ok = 0.8; } } if (a.cit && a.cit.ent === a) citArrive(a.cit, a.destB); continue; }
+          if (g.garage && alive(g.garage)) { a.state = 'garage'; a.gb = a.destB = g.garage; a.dockOut = null; a.px = undefined; a.v = 0; if (a.cit && a.cit.ent === a) citArrive(a.cit, g.garage); continue; } agents.splice(k, 1); continue; } const e = g.k * g.k * (3 - 2 * g.k); p = { x: lerp(g.x0, g.x, e), y: lerp(g.y0, g.y, e), z: lerp(g.z0, g.z, e), rot: g.stall && g.k > 0.6 ? g.stall.rot : g.k < 0.8 ? Math.atan2(g.x - g.x0, g.z - g.z0) : a.rotY, pitch: 0 }; }
         else if (a.slot !== undefined && a.stopT !== undefined && a.state !== 'arrive') { a.state = 'curb'; a.t = a.stopT; a.v = 0; a.parkT = sigT; a.outT = 0.7; a.pk = 0; if (a.cit && a.cit.ent === a) citArrive(a.cit, a.destB); p = agentPose(a, side, 0, true); }
         else if (a.onFire && a.target) { a.onFire = false; a.state = 'parked'; if (a.target.burning) a.target.truckArrived = true; p = agentPose(a, side, 0, true); }
-        else if (!onArrive(a)) { if (a.type === 'car' && !a.leaving && a.state !== 'arrive' && alive(a.destB) && a.px !== undefined) { const d = doorOf(a.destB); a.dockOut = { x0: a.px, z0: a.pz, y0: a.py || d.y, x: d.x, y: d.y, z: d.z, k: 0, garage: a.destB }; p = { x: a.px, y: a.py || d.y, z: a.pz, rot: a.rotY, pitch: 0 }; } else if (a.type === 'car' && a.state !== 'arrive') { a.state = 'arrive'; a.fade = 1; p = agentPose(a, side, 0, true); } else if (a.homeB && alive(a.homeB) && a.px !== undefined) { const d = doorOf(a.homeB); a.dockOut = { x0: a.px, z0: a.pz, y0: a.py || d.y, x: d.x, y: d.y, z: d.z, k: 0 }; a.onFire = false; a.lights = false; p = { x: a.px, y: a.py || d.y, z: a.pz, rot: a.rotY, pitch: 0 }; } else { agents.splice(k, 1); continue; } }
+        else if (crossWait(a, dt)) { p = { x: a.px, y: a.py || 0, z: a.pz, rot: a.rotY, pitch: 0 }; }
+        else if (!onArrive(a)) { if (a.type === 'car' && !a.leaving && a.state !== 'arrive' && alive(a.destB) && a.px !== undefined) { const lot = a.destB.kind !== 'parking' && Math.random() < 0.85 ? nearLot(a.px, a.pz) : null, lk = lot ? freeStall(lot) : -1; if (lot && lk >= 0) { const sv = lotStalls(lot)[lk]; lotUse.get(lot.id)[lk] = a; a.lotB = lot; a.lotK = lk; a.dockOut = { x0: a.px, z0: a.pz, y0: a.py || sv.y, x: sv.x, y: sv.y, z: sv.z, k: 0, garage: lot, stall: sv, real: a.destB }; } else { const d = doorOf(a.destB); a.dockOut = { x0: a.px, z0: a.pz, y0: a.py || d.y, x: d.x, y: d.y, z: d.z, k: 0, garage: a.destB }; } p = { x: a.px, y: a.py || 0, z: a.pz, rot: a.rotY, pitch: 0 }; } else if (a.type === 'car' && a.state !== 'arrive') { a.state = 'arrive'; a.fade = 1; p = agentPose(a, side, 0, true); } else if (a.homeB && alive(a.homeB) && a.px !== undefined) { const d = doorOf(a.homeB); a.dockOut = { x0: a.px, z0: a.pz, y0: a.py || d.y, x: d.x, y: d.y, z: d.z, k: 0 }; a.onFire = false; a.lights = false; p = { x: a.px, y: a.py || d.y, z: a.pz, rot: a.rotY, pitch: 0 }; } else { agents.splice(k, 1); continue; } }
         else { p = agentPose(a, side, 0, true); if (p === 'end' || !p) { agents.splice(k, 1); continue; } }
       }
       if (!p) { agents.splice(k, 1); continue; }
@@ -6105,7 +6181,7 @@ const R3 = (function () {
       if (a.boardCD > 0) a.boardCD -= dt;
       if (dt > 0 && a.state === 'curb') {
         if (a.outT > 0 && !(a.pk < 1) && Math.abs(a.lat - PARK_LAT) < 0.01) { a.outT -= dt; if (a.outT <= 0) driverOut(a); }
-        if (a.pend) { a.boardT -= dt; if (a.boardT <= 0) { if (startTrip(a, a.pend.r, false)) { a.destB = a.pend.b; a.pend = null; } else if (a.boardT < -8) a.pend = null; } }
+        if (a.pend) { a.boardT -= dt; if (a.boardT <= 0) { if (startTrip(a, a.pend.r, false, a.pend.b)) { a.destB = a.pend.b; a.pend = null; } else if (a.boardT < -8) a.pend = null; } }
       }
       if (a.pk < 1 && a.state === 'curb') { a.pk += dt / 2.2; const u = Math.min(1, a.pk), fwd = u < 0.3 ? u / 0.3 : 1 - (u - 0.3) / 0.7, bk = u < 0.3 ? 0 : Math.sin(Math.PI * (u - 0.3) / 0.7), off = 0.17 * fwd; p = { x: p.x + Math.sin(p.rot) * off, y: p.y, z: p.z + Math.cos(p.rot) * off, rot: p.rot + 0.42 * bk, pitch: p.pitch }; }
       // viatura saindo da garagem do quartel: do portão até a pista
@@ -6214,13 +6290,19 @@ const R3 = (function () {
     const morning = tod > 0.26 && tod < 0.42, evening = tod > 0.68 && tod < 0.82, night = nightK > 0.5;
     const dice = Math.random();
     let purpose;
-    if (morning) purpose = dice < 0.14 && L.schools.length ? 'school' : dice < 0.74 ? 'work' : dice < 0.88 ? 'shop' : 'park';
+    const unis = L.schools.filter(j => j.b.kind === 'university');
+    if (morning) purpose = dice < 0.14 && L.schools.length ? 'school' : dice < 0.26 && unis.length ? 'study' : dice < 0.74 ? 'work' : dice < 0.88 ? 'shop' : 'park';
     else if (evening) purpose = dice < 0.5 ? 'home' : dice < 0.7 ? 'park' : dice < 0.84 && L.funs.length ? 'fun' : 'shop';
     else if (night) purpose = dice < 0.62 ? 'home' : 'shop';
-    else purpose = dice < 0.3 ? 'park' : dice < 0.42 && L.funs.length ? 'fun' : dice < 0.62 ? 'shop' : dice < 0.76 ? 'work' : dice < 0.9 ? 'visit' : 'home';
+    else purpose = dice < 0.3 ? 'park' : dice < 0.42 && L.funs.length ? 'fun' : dice < 0.5 && unis.length ? 'study' : dice < 0.64 ? 'shop' : dice < 0.77 ? 'work' : dice < 0.9 ? 'visit' : 'home';
     let path = null, from = r.b, to = null;
     const end = () => path[path.length - 1];
-    if (purpose === 'work') { path = bfsTo(r.r, i => L.jobTile[i], 4000); if (path) to = atTile(L.jobs, end()); }
+    // destino escolhido pelo tamanho (um complexo grande atrai mais gente), não só o mais perto
+    const pickBig = list => { if (!list.length) return false; const wt = j => { const g = comboOf(j.b); return (j.b.size || 1) ** 2 * (g ? g.n : 1); }; let tot = 0; for (const j of list) tot += wt(j); for (let q = 0; q < 3; q++) { let u = Math.random() * tot, pk = list[0]; for (const j of list) { u -= wt(j); if (u <= 0) { pk = j; break; } } const p2 = pk.r === r.r ? null : bfsPath(r.r, pk.r); if (p2 && p2.length > 1 && p2.length <= 48) { path = p2; to = pk.b; return true; } } return false; };
+    if (purpose === 'study') { if (!pickBig(unis)) purpose = 'work'; }
+    if (purpose === 'fun' && Math.random() < 0.6) pickBig(L.funs); else if (purpose === 'park' && Math.random() < 0.5) pickBig(L.parks);
+    if (path) { }
+    else if (purpose === 'work') { path = bfsTo(r.r, i => L.jobTile[i], 4000); if (path) to = atTile(L.jobs, end()); }
     else if (purpose === 'school') { path = bfsTo(r.r, i => L.schoolTile[i], 5000); if (path) to = atTile(L.schools, end()); }
     else if (purpose === 'fun') { path = bfsTo(r.r, i => L.funTile[i], 6000); if (path) to = atTile(L.funs, end()); }
     else if (purpose === 'park') { if (L.parks.length) { path = bfsTo(r.r, i => L.parkTile[i], 3500); if (path) to = atTile(L.parks, end()); } }
@@ -6263,6 +6345,7 @@ const R3 = (function () {
     garden: [[0.2, 0.2], [0.8, 0.2], [0.8, 0.8], [0.2, 0.8], [0.5, 0.5]],
     promenade: [[0.08, 0.16], [0.92, 0.16], [0.9, 0.36], [0.1, 0.36], [0.5, 0.86], [0.2, 0.9]],
     playground: [[0.12, 0.5], [0.88, 0.52], [0.5, 0.52], [0.6, 0.9], [0.85, 0.2]],
+    campus: [[0.12, 0.92], [0.35, 0.95], [0.6, 0.92], [0.88, 0.94], [0.5, 0.96]],
   };
   function pickActivity(c, b) {
     const k = b.kind, d = Math.random(), A = (kind, o) => Object.assign({ kind, t: 0, dur: 12 + Math.random() * 14, step: 0 }, o || {});
@@ -6274,17 +6357,25 @@ const R3 = (function () {
     if (k === 'fountain') { const a = Math.random() * Math.PI * 2; return d < 0.6 ? A('watch', { sx: 0.5 + Math.cos(a) * 0.42, sz: 0.5 + Math.sin(a) * 0.42, fx: 0.5, fz: 0.5 }) : A('stroll', { speed: 0.09 }); }
     if (k === 'garden') return d < 0.5 ? A('stroll', { speed: 0.07 }) : A('watch', { sx: 0.2 + Math.random() * 0.6, sz: 0.17, fx: 0.5, fz: 0.5 });
     if (k === 'promenade') return d < 0.3 ? seat() : d < 0.75 ? A('stroll', { speed: 0.1 }) : A('watch', { sx: 0.1 + Math.random() * 0.8, sz: 0.07, fx: 0.5, fz: -3 });
+    if (CAMPUS[k] && !isDeco(b)) { const sx = 0.12 + Math.random() * 0.76, sz = 0.9 + Math.random() * 0.06; return d < 0.45 ? A('chat', { sx, sz, fx: sx + (Math.random() - 0.5), fz: sz, dur: 14 + Math.random() * 16 }) : d < 0.75 ? A('stroll', { speed: 0.08 }) : A('watch', { sx, sz, fx: 0.5, fz: 0.3 }); }
     if (k === 'plaza') return d < 0.42 ? seat() : d < 0.72 ? A('stroll', { speed: 0.1 }) : A('chat', { sx: 0.3 + Math.random() * 0.4, sz: 0.3 + Math.random() * 0.4, fx: 0.5, fz: 0.5 });
     // parque
     if (c.kid) return d < 0.7 ? A('run', { dur: 12 + Math.random() * 10 }) : A('stroll', { speed: 0.12 });
     return d < 0.3 ? seat() : d < 0.55 ? A('jog', { dur: 16 + Math.random() * 14, step: Math.floor(Math.random() * 4) }) : d < 0.8 ? A('stroll', { speed: 0.1 }) : A('exercise', { sx: Math.random() < 0.5 ? 0.25 : 0.75, sz: Math.random() < 0.5 ? 0.8 : 0.2, fx: 0.5, fz: 0.5 });
   }
   const JOG = [[0.1, 0.1], [0.9, 0.1], [0.9, 0.9], [0.1, 0.9]];
+  // campus: estudantes e visitantes ficam um tempo na frente (conversando, sentados, passeando)
+  const CAMPUS = { university: 1, school: 1, museum: 1, stadium: 1, zoo: 1, hospital: 1 };
+  // referencial local (0..1) do lugar: um prédio de várias quadras ou um complexo inteiro, frente em +z
+  function actFrame(b) {
+    const g = comboOf(b);
+    if (g && !isDeco(b)) { const fake = Object.assign({}, g.leader, { w: g.w, d: g.d }), rot = bRot(fake), LW = rot % 2 ? g.d : g.w, LD = rot % 2 ? g.w : g.d, cx = g.leader.x - HW + g.w / 2, cz = g.leader.z - HH + g.d / 2; return { W: (lx, lz) => rotPt(cx + (lx - 0.5) * LW, cz + (lz - 0.5) * LD, cx, cz, rot) }; }
+    const S = b.size || 1, rot = decoRot(b), cx = b.x - HW + S / 2, cz = b.z - HH + S / 2; return { W: (lx, lz) => rotPt(cx + (lx - 0.5) * S, cz + (lz - 0.5) * S, cx, cz, rot) };
+  }
   // devolve a pose dentro do local; coordenadas locais (0..1) na quadra do prédio
   function parkPose(c, dt, now) {
     const b = c.to, a = c.act, base = b.h * TH + 0.012; a.t += dt;
-    const drot = decoRot(b);
-    const W2 = (lx, lz) => { if (drot) { const q = rotPt(lx, lz, 0.5, 0.5, drot); lx = q[0]; lz = q[1]; } return [b.x - HW + lx, b.z - HH + lz]; };
+    const fr = c.fr || (c.fr = actFrame(b)), W2 = fr.W;
     const pose = { x: c.lx, y: base, z: c.lz, rot: c.lrot || 0, still: true };
     const go = (lx, lz, sp) => { const [tx, tz] = W2(lx, lz), d = Math.hypot(tx - c.lx, tz - c.lz); if (d < 0.015) return true; const s = Math.min(d, sp * dt); c.lx += (tx - c.lx) / d * s; c.lz += (tz - c.lz) / d * s; c.lrot = Math.atan2(tx - c.lx, tz - c.lz); pose.x = c.lx; pose.z = c.lz; pose.rot = c.lrot; pose.still = false; return false; };
     const face = (lx, lz) => { const [fx, fz] = W2(lx, lz); c.lrot = pose.rot = Math.atan2(fx - c.lx, fz - c.lz); };
@@ -6293,7 +6384,7 @@ const R3 = (function () {
       case 'watch': if (go(a.sx, a.sz, 0.12)) face(a.fx, a.fz); break;
       case 'chat': if (go(a.sx, a.sz, 0.12)) { face(a.fx, a.fz); pose.gesture = true; } break;
       case 'exercise': if (go(a.sx, a.sz, 0.12)) { face(a.fx, a.fz); pose.armsUp = true; pose.y = base + Math.abs(Math.sin(now * 3 + c.ph)) * 0.012; } break;
-      case 'stroll': { const pts = STROLL[b.kind] || STROLL.park; if (a.tx === undefined || go(a.tx, a.tz, a.speed || 0.1)) { if (a.tx !== undefined && a.pause === undefined) a.pause = Math.random() < 0.4 ? 1 + Math.random() * 2.5 : 0; if (a.pause > 0) { a.pause -= dt; break; } const p = pts[Math.floor(Math.random() * pts.length)]; a.tx = p[0] + (Math.random() - 0.5) * 0.06; a.tz = p[1] + (Math.random() - 0.5) * 0.06; a.pause = undefined; } break; }
+      case 'stroll': { const pts = STROLL[b.kind] || (CAMPUS[b.kind] && !isDeco(b) ? STROLL.campus : STROLL.park); if (a.tx === undefined || go(a.tx, a.tz, a.speed || 0.1)) { if (a.tx !== undefined && a.pause === undefined) a.pause = Math.random() < 0.4 ? 1 + Math.random() * 2.5 : 0; if (a.pause > 0) { a.pause -= dt; break; } const p = pts[Math.floor(Math.random() * pts.length)]; a.tx = p[0] + (Math.random() - 0.5) * 0.06; a.tz = p[1] + (Math.random() - 0.5) * 0.06; a.pause = undefined; } break; }
       case 'jog': { const p = JOG[a.step % 4]; if (go(p[0], p[1], 0.34)) a.step++; pose.run = true; break; }
       case 'run': { if (a.tx === undefined || a.t > (a.next || 0) || go(a.tx, a.tz, 0.3)) { a.tx = 0.14 + Math.random() * 0.72; a.tz = b.kind === 'playground' ? 0.46 + Math.random() * 0.2 : 0.14 + Math.random() * 0.72; a.next = a.t + 1 + Math.random() * 1.8; } pose.run = !pose.still; break; }
       case 'swing': if (a.on || go(0.5, 0.62, 0.14)) {
@@ -6469,7 +6560,7 @@ const R3 = (function () {
         if (v.od && !v.opened && v.k >= (v.ok || 0)) { openDoor(v.od); v.opened = true; }
         const e = Math.min(1, v.k);
         p = { x: lerp(v.x0, v.x1, e), y: lerp(v.y0, v.y1, e), z: lerp(v.z0, v.z1, e), rot: Math.atan2(v.x1 - v.x0, v.z1 - v.z0) }; pose.walk = dt > 0;
-        if (v.k >= 1) { if (v.then === 'walk') c.state = 'walk'; else if (v.then === 'gone' && c.ride && c.ride.mode === 'metro') { c.state = 'ride'; c.hidden = true; c.mv = null; c.rideT = 2.5 + (Math.abs((c.ride.stA.x - c.ride.stB.x)) + Math.abs(c.ride.stA.z - c.ride.stB.z)) / 7; continue; } else if (v.then === 'waitbus') { c.state = 'waitbus'; c.waitT = 0; c.prot = v.face; } else if (v.then === 'act') { c.state = 'act'; c.lx = v.x1; c.lz = v.z1; c.act = pickActivity(c, c.to); } else { if (c.cit && c.cit.ent === c) citArrive(c.cit, c.to); peds.splice(k, 1); continue; } c.mv = null; }
+        if (v.k >= 1) { if (v.then === 'walk') c.state = 'walk'; else if (v.then === 'gone' && c.ride && c.ride.mode === 'metro') { c.state = 'ride'; c.hidden = true; c.mv = null; c.rideT = 2.5 + (Math.abs((c.ride.stA.x - c.ride.stB.x)) + Math.abs(c.ride.stA.z - c.ride.stB.z)) / 7; continue; } else if (v.then === 'waitbus') { c.state = 'waitbus'; c.waitT = 0; c.prot = v.face; } else if (v.then === 'act') { c.state = 'act'; c.fr = null; c.lx = v.x1; c.lz = v.z1; c.act = pickActivity(c, c.to); } else { if (c.cit && c.cit.ent === c) citArrive(c.cit, c.to); peds.splice(k, 1); continue; } c.mv = null; }
       } else if (c.state === 'act') {
         if (!city.bmap.get(c.to.id)) { peds.splice(k, 1); continue; }
         p = parkPose(c, dt, now); pose = p; pose.walk = !p.still && !p.run && !p.sit;
@@ -6504,10 +6595,12 @@ const R3 = (function () {
           if (c.ride && c.ride.mode === 'bus' && c.px !== undefined) { c.state = 'waitbus'; c.waitT = 0; const hr = c.prot0 || 0, off = (Math.random() - 0.5) * 0.5; c.px -= Math.sin(hr) * (0.1 + Math.abs(off)); c.pz -= Math.cos(hr) * (0.1 + Math.abs(off)); c.prot = hr - Math.PI / 2 + (Math.random() - 0.5) * 0.6; continue; }
           const to = c.to && city.bmap.get(c.to.id) ? c.to : null;
           if (!to || c.px === undefined) { peds.splice(k, 1); continue; }
-          const park = isDeco(to), d = gateOf(to, c.px, c.pz);
+          const camp = !isDeco(to) && CAMPUS[to.kind] && (c.purpose === 'study' || c.purpose === 'fun' || Math.random() < 0.4) && Math.random() < 0.85;
+          const park = isDeco(to) || camp, d = gateOf(to, c.px, c.pz);
           const tx = park ? to.x - HW + 0.5 : d.x + (d.ix || 0), tz = park ? to.z - HH + 0.5 : d.z + (d.iz || 0);
-          // nos parques entra pela borda mais próxima; nos prédios vai até a porta
-          const ex = park ? clamp(c.px, to.x - HW + 0.1, to.x - HW + 0.9) : tx, ez = park ? clamp(c.pz, to.z - HH + 0.1, to.z - HH + 0.9) : tz;
+          // nos parques entra pela borda mais próxima; nos prédios vai até a porta; no campus fica um tempo na frente
+          let ex = park ? clamp(c.px, to.x - HW + 0.1, to.x - HW + 0.9) : tx, ez = park ? clamp(c.pz, to.z - HH + 0.1, to.z - HH + 0.9) : tz;
+          if (camp) { const fr = actFrame(to), q = fr.W(0.2 + Math.random() * 0.6, 0.93); ex = q[0]; ez = q[1]; }
           c.mv = { x0: c.px, z0: c.pz, y0: c.py, x1: ex, z1: ez, y1: d.y, k: 0, then: park ? 'act' : 'gone' }; c.state = 'move'; if (!park && d.db) { c.mv.od = to; c.mv.ok = Math.max(0, 1 - 0.32 / (Math.hypot(ex - c.px, ez - c.pz) || 1)); } continue;
         }
         if (!p) { peds.splice(k, 1); continue; }
@@ -6999,6 +7092,9 @@ const R3 = (function () {
     },
     sideSpots: () => { if (!sideCache) buildSide(); const out = []; for (let i = 0; i < N; i++) if (sideCache[i]) out.push([i % W, (i / W) | 0, sideCache[i]]); return out; },
     clusterSpots: () => { isSignal(0); return [...sigClu.values()].filter(c => c.tiles.length > 1).map(c => c.tiles.map(t => [t % W, (t / W) | 0])); },
+    fillLots: n => { let c2 = 0; const seen = new Set(); for (const b0 of city.buildings) { const b = lotOf(b0); if (!b || seen.has(b)) continue; seen.add(b); for (let q = 0; q < (n || 4); q++) { const k = freeStall(b); if (k < 0) break; const r0 = roadIdxOf(b); const a = addAgent('car', [r0, r0]); if (!a) break; a.state = 'garage'; a.gb = b; a.destB = b; a.lotB = b; a.lotK = k; lotUse.get(b.id)[k] = a; c2++; } } return c2; },
+    lotSpots: () => agents.filter(a => a.state === 'garage' && a.lotB).map(a => { const s2 = lotStalls(a.lotB)[a.lotK]; return [s2.x, s2.z]; }),
+    visitStats: () => { const act = {}; for (const c of peds) if (c.state === 'act' && c.to) act[c.to.kind] = (act[c.to.kind] || 0) + 1; const dest = {}; for (const c of peds) if (c.to && c.state === 'walk') dest[c.purpose + '>' + c.to.kind] = (dest[c.purpose + '>' + c.to.kind] || 0) + 1; const lots = city.buildings.filter(b => b.kind === 'parking').length; return { act, lotCars: agents.filter(a => a.state === 'garage' && a.lotB).length, docking: agents.filter(a => a.dockOut && a.dockOut.stall).length, lots, unis: city.buildings.filter(b => b.kind === 'university').length, peds: peds.length, dest }; },
     holdDoors: () => { let n = 0; for (const b of city.buildings) { const m = bmeta.get(b.id); if (m && m.door) { doorOpen.set(b.id, { t: 999, a: 1, b }); n++; } } updateDoors(0.016); return n; },
     pedStep: (dt, n) => { const t0 = performance.now() / 1000; for (let k = 0; k < n; k++) { updatePeds(dt, t0 + k * dt); updateDoors(dt); } return peds.length; },
     doorStats: () => { let withDoor = 0; for (const [, m] of bmeta) if (m && m.door) withDoor++; return { open: doorOpen.size, withDoor, peds: peds.length, moving: peds.filter(c => c.state === 'move').length, doors: [...doorOpen.values()].slice(0, 6).map(o => { const m = bmeta.get(o.b.id); return [+m.door.x.toFixed(2), +m.door.z.toFixed(2), o.b.kind, +o.a.toFixed(2)]; }) }; },
@@ -7166,7 +7262,7 @@ const Snd = (function () {
 (function () {
   'use strict';
   const $ = s => document.querySelector(s);
-  const APP_VERSION = {"v":41,"date":"2026-11-17","notes":["Pontes e avenidas em curva feitas em vários trechos agora emendam lisas: sem degrau, sem desvio de lado e sem a mureta atravessando a pista.","Uma quadra reta solta entre duas curvas passa a acompanhar a curva.","A altura da ponte segue o comprimento real do traçado, sem rachadura nas quinas."]};
+  const APP_VERSION = {"v":43,"date":"2026-11-17","notes":["Ruas: \"esquina\" é o padrão de novo e as esquinas não viram mais curva sozinhas; curvas não passam mais por cima de prédios.","Trânsito: carros não fazem mais conversão/retorno no meio da rua; esperam a outra pista livre antes de cruzar.","Pontes: emenda da curva entre a terra e a ponte ficou lisa.","Orla emendada vira uma praia grande: calçadão, coqueiros, quiosques, guarda-sóis, salva-vidas e vôlei.","Os carros estacionam de verdade nos estacionamentos e o motorista vai a pé até o destino.","Universidade, escola, museu, zoológico e hospital recebem visitantes e estudantes na frente."]};
   const VER = (typeof APP_VERSION !== 'undefined' && APP_VERSION) || { v: 0, date: '', notes: [] };
   const verDate = () => { const p = String(VER.date || '').split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : ''; };
   const { City, DEFS, HAND, TERRA, ROADS, ISSUE_TIPS, ZONE_NAMES, LEVEL_NAMES, ZSTAT, MISSIONS, ACHIEVEMENTS, SCENARIOS, T, Z, W, H, PARCEL, PX } = Sim;
@@ -7419,14 +7515,14 @@ const Snd = (function () {
     return out;
   }
   // formato da rua entre os dois toques: curva (sai no sentido da rua anterior), curva invertida, reta inclinada ou esquina
-  const SHAPES = ['curve', 'curve2', 'diag', 'L'], SHAPE_LB = { curve: '⌒ Curva', curve2: '⌒ Curva ↺', diag: '╱ Reta', L: '⌐ Esquina' };
+  const SHAPES = ['L', 'curve', 'curve2', 'diag'], SHAPE_LB = { curve: '⌒ Curva', curve2: '⌒ Curva ↺', diag: '╱ Reta', L: '⌐ Esquina' };
   function lineDirIn(c, a) { // sentido da rua que já chega no ponto A (ponta de rua), se houver uma só
     const i = c.idx(a.x, a.z); if (!c.road[i]) return null; const ns = []; for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const x = a.x + dx, z = a.z + dz; if (c.inb(x, z) && c.roadConn(i, c.idx(x, z))) ns.push(dx ? 'x' : 'z'); }
     return ns.length === 1 ? ns[0] : null;
   }
   // traçado da rua entre A e B: formato, sentido de saída e o registro guardado na cidade (só curva e reta inclinada)
   function lineSpec(pd, b) {
-    const a = pd.a; b = b || pd.b || pd.a; const shape = pd.shape || state.lineShape || 'curve';
+    const a = pd.a; b = b || pd.b || pd.a; const shape = pd.shape || state.lineShape || 'L';
     if (a.x === b.x || a.z === b.z) return { a, b, shape: 'L', sx: true, rec: null };
     const dirIn = pd.dirIn || lineDirIn(state.city, a), auto = dirIn ? dirIn === 'x' : Math.abs(b.x - a.x) >= Math.abs(b.z - a.z);
     if (shape === 'L') return { a, b, shape: 'L', sx: auto, rec: null };
@@ -7504,7 +7600,7 @@ const Snd = (function () {
     else txt = `${head} · ${plural(info.count, 'quadra', 'quadras')} · ${fmt(info.cost)}${info.blocked ? ` <span class="warn">(${info.blocked} bloq.)</span>` : ''}` + (info.ok ? again : bad);
     $('#confirm-text').innerHTML = txt;
     const sb = $('#confirm-shape'), bent = pd.mode === 'line' && pd.b && pd.a.x !== pd.b.x && pd.a.z !== pd.b.z;
-    sb.hidden = !bent; if (bent) sb.textContent = SHAPE_LB[pd.shape || state.lineShape || 'curve'];
+    sb.hidden = !bent; if (bent) sb.textContent = SHAPE_LB[pd.shape || state.lineShape || 'L'];
     bar.hidden = false; $('#hint').hidden = true;
     if (pd.mode === 'place') {
       R3.setTiles(null);
@@ -7709,7 +7805,7 @@ const Snd = (function () {
   document.addEventListener('gesturestart', e => e.preventDefault());
   document.addEventListener('pointerdown', () => { try { Snd.resume(); } catch (_) { } }, { capture: true });
   $('#confirm-cancel').addEventListener('click', () => { clearPending(); sfx('click'); });
-  $('#confirm-shape').addEventListener('click', () => { const pd = state.pending; if (!pd || pd.mode !== 'line') return; const cur = pd.shape || state.lineShape || 'curve'; pd.shape = state.lineShape = SHAPES[(SHAPES.indexOf(cur) + 1) % SHAPES.length]; sfx('click'); showPending(); });
+  $('#confirm-shape').addEventListener('click', () => { const pd = state.pending; if (!pd || pd.mode !== 'line') return; const cur = pd.shape || state.lineShape || 'L'; pd.shape = state.lineShape = SHAPES[(SHAPES.indexOf(cur) + 1) % SHAPES.length]; sfx('click'); showPending(); });
 
   const keys = new Set();
   function exploreKeys() {
