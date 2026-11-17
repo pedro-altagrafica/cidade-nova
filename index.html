@@ -436,20 +436,22 @@ const Sim = (function () {
     garden:   { name: 'Jardim',            cost: 120,   upkeep: 6,   size: 1, cat: 'leisure',  cov: 'park', radius: 2, covW: 0.6, deco: true, desc: 'Flores para enfeitar uma esquina.' },
     parking:  { name: 'Estacionamento',    cost: 150,   upkeep: 5,   size: 1, cat: 'leisure',  cov: 'parking', radius: 4, covW: 1, needRoad: true, desc: 'Mais clientes para as lojas em volta.' },
     promenade:{ name: 'Orla',              cost: 300,   upkeep: 10,  size: 1, cat: 'leisure',  cov: 'park', radius: 4, covW: 1, needWater: true, deco: true, desc: 'Calçadão à beira da água. Precisa encostar na água.' },
-    airport:  { name: 'Aeroporto',         cost: 45000, upkeep: 900, size: 5, cat: 'services', needRoad: true, unlock: 5000, max: 1, desc: 'Turismo e negócios: mais demanda comercial e renda de turismo. O barulho incomoda as casas vizinhas.' },
-    cruise:   { name: 'Terminal de cruzeiros', cost: 26000, upkeep: 500, size: 3, cat: 'services', needRoad: true, needWater: true, unlock: 3000, max: 1, tour: 25, desc: 'Navios de cruzeiro atracam e os turistas descem para passear pelas atrações, parques e lojas da cidade. Precisa encostar na água.' },
-    port:     { name: 'Porto',             cost: 20000, upkeep: 450, size: 3, cat: 'services', needRoad: true, needWater: true, unlock: 2000, max: 2, desc: 'Exportação: mais demanda industrial e a indústria rende 20% a mais. Precisa encostar na água.' },
-    amusement:{ name: 'Parque de diversões', cost: 18000, upkeep: 350, size: 3, cat: 'leisure', cov: 'park', radius: 9, covW: 1, needRoad: true, unlock: 2500, max: 1, tour: 40, desc: 'Roda-gigante, carrossel e montanha-russa. Muita felicidade em volta e atrai turistas.' },
-    zoo:      { name: 'Zoológico',         cost: 14000, upkeep: 300, size: 3, cat: 'leisure', cov: 'park', radius: 8, covW: 1, needRoad: true, unlock: 3500, max: 1, tour: 30, desc: 'Girafas, elefantes, leões e flamingos. Felicidade e turismo.' },
-    museum:   { name: 'Museu',             cost: 9000,  upkeep: 180, size: 2, cat: 'leisure', cov: 'park', radius: 6, covW: 0.8, needRoad: true, unlock: 1500, max: 2, tour: 20, desc: 'Cultura para os moradores e atração para visitantes.' },
-    monument: { name: 'Monumento',         cost: 3000,  upkeep: 30,  size: 1, cat: 'leisure', cov: 'park', radius: 5, covW: 0.8, unlock: 800, max: 3, tour: 6, desc: 'Uma estátua para marcar o centro da cidade.' },
-    lighthouse:{ name: 'Farol',            cost: 2500,  upkeep: 40,  size: 1, cat: 'leisure', cov: 'park', radius: 4, covW: 0.6, needWater: true, unlock: 600, max: 2, tour: 8, desc: 'Luz girando à noite na beira da água. Precisa encostar na água.' },
+    airport:  { name: 'Aeroporto',         cost: 45000, upkeep: 900, size: 5, cat: 'services', needRoad: true, unlock: 5000, max: 1, per: 60000, desc: 'Turismo e negócios: mais demanda comercial e renda de turismo. O barulho incomoda as casas vizinhas.' },
+    cruise:   { name: 'Terminal de cruzeiros', cost: 26000, upkeep: 500, size: 3, cat: 'services', needRoad: true, needWater: true, unlock: 3000, max: 1, per: 40000, tour: 25, desc: 'Navios de cruzeiro atracam e os turistas descem para passear pelas atrações, parques e lojas da cidade. Precisa encostar na água.' },
+    port:     { name: 'Porto',             cost: 20000, upkeep: 450, size: 3, cat: 'services', needRoad: true, needWater: true, unlock: 2000, max: 2, per: 25000, desc: 'Exportação: mais demanda industrial e a indústria rende 20% a mais. Precisa encostar na água.' },
+    amusement:{ name: 'Parque de diversões', cost: 18000, upkeep: 350, size: 3, cat: 'leisure', cov: 'park', radius: 9, covW: 1, needRoad: true, unlock: 2500, max: 1, per: 15000, tour: 40, desc: 'Roda-gigante, carrossel e montanha-russa. Muita felicidade em volta e atrai turistas.' },
+    zoo:      { name: 'Zoológico',         cost: 14000, upkeep: 300, size: 3, cat: 'leisure', cov: 'park', radius: 8, covW: 1, needRoad: true, unlock: 3500, max: 1, per: 20000, tour: 30, desc: 'Girafas, elefantes, leões e flamingos. Felicidade e turismo.' },
+    museum:   { name: 'Museu',             cost: 9000,  upkeep: 180, size: 2, cat: 'leisure', cov: 'park', radius: 6, covW: 0.8, needRoad: true, unlock: 1500, max: 2, per: 10000, tour: 20, desc: 'Cultura para os moradores e atração para visitantes.' },
+    monument: { name: 'Monumento',         cost: 3000,  upkeep: 30,  size: 1, cat: 'leisure', cov: 'park', radius: 5, covW: 0.8, unlock: 800, max: 3, per: 5000, tour: 6, desc: 'Uma estátua para marcar o centro da cidade.' },
+    lighthouse:{ name: 'Farol',            cost: 2500,  upkeep: 40,  size: 1, cat: 'leisure', cov: 'park', radius: 4, covW: 0.6, needWater: true, unlock: 600, max: 2, per: 10000, tour: 8, desc: 'Luz girando à noite na beira da água. Precisa encostar na água.' },
     stadium:  { name: 'Estádio',           cost: 12000, upkeep: 600, size: 3, cat: 'leisure',  cov: 'stadium', radius: 14, covW: 1, needRoad: true, unlock: 4000, desc: 'Orgulho da cidade: felicidade num raio enorme.' },
   };
   // ampliação: construções iguais encostadas e alinhadas viram um complexo (retângulo de até [largura, fundo] unidades),
   // com alcance maior, atendimento mais forte, manutenção menor e, nas usinas, mais produção
   const COMBO = { police: [4, 3], fire: [4, 3], parking: [4, 3], school: [3, 2], hospital: [3, 2], university: [3, 2], bus: [4, 2], metro: [3, 2], landfill: [3, 2], recycling: [3, 2],
-    park: [4, 4], plaza: [4, 4], garden: [4, 4], playground: [3, 3], fountain: [3, 3], solar: [3, 3], water: [4, 3], wind: [4, 4], coal: [3, 2] };
+    park: [4, 4], plaza: [4, 4], garden: [4, 4], playground: [3, 3], fountain: [3, 3], solar: [3, 3], water: [4, 3], wind: [4, 4], coal: [3, 2], amusement: [2, 2] };
+  // limite das construções especiais: cresce com a população (um a mais a cada `per` habitantes)
+  const maxOf = (kind, pop) => { const d = DEFS[kind]; if (!d || !d.max) return Infinity; return Math.max(d.max, d.per ? Math.floor((pop || 0) / d.per) : 0); };
   const comboBonus = n => { const k = Math.max(0, n - 1); return { R: Math.min(1.5, 1 + 0.12 * k), core: Math.min(0.75, 0.6 + 0.04 * k), w: Math.min(1.3, 1 + 0.1 * k), up: Math.max(0.7, 1 - 0.06 * k), out: Math.min(1.4, 1 + 0.08 * k) }; };
   // quadras de uma rua desenhada de A até B (sempre ligadas lado a lado):
   // 'L' esquina, 'diag' reta inclinada, 'curve' arco de elipse; startX: a rua sai de A no sentido do eixo x
@@ -910,7 +912,10 @@ const Sim = (function () {
       }
       if (d && d.needRoad && !this.hasRoadAround(x, z, size) && !this.sameKindBeside(kind, x, z, size)) return { ok: false, reason: 'Precisa ficar ao lado de uma rua.' };
       if (d && d.needWater && !this.hasWaterAround(x, z, size)) return { ok: false, reason: 'Precisa encostar na água.' };
-      if (d && d.max && this.buildings.filter(b => b.kind === kind).length >= d.max) return { ok: false, reason: d.max === 1 ? `A cidade só comporta um ${d.name.toLowerCase()}.` : `Limite de ${d.max} por cidade.` };
+      if (d && d.max && !this.joinsCluster(kind, x, z)) {      // ampliar um que já existe (encostado) não conta como novo
+        const mx = maxOf(kind, this.stats.pop), have = this.countOf(kind);
+        if (have >= mx) { const per = d.per ? ` Mais um a cada ${Math.round(d.per / 1000)} mil habitantes.` : ''; return { ok: false, reason: `Com ${Math.round(this.stats.pop || 0).toLocaleString('pt-BR')} habitantes a cidade comporta ${mx === 1 ? 'um' : mx} (${d.name.toLowerCase()}).${per}${COMBO[kind] ? ' Dá para ampliar o que já existe, encostando ao lado.' : ''}` }; }
+      }
       if (this.money < cost) return { ok: false, reason: 'Dinheiro insuficiente.' };
       return { ok: true };
     }
@@ -946,16 +951,16 @@ const Sim = (function () {
 
     /* --- ampliações (complexos) --- */
     // grupo de construções iguais ligadas a b (mesmo tipo, alinhadas, prontas e no mesmo patamar); extra = construção ainda não feita (prévia)
-    comboComp(b, extra) {
+    comboComp(b, extra, loose) {
       const S = b.size || 1, h0 = b.h || 0;
-      const at = (x, z) => { if (extra && extra.x === x && extra.z === z) return extra; if (!this.inb(x, z)) return null; const m = this.bmap.get(this.bld[this.idx(x, z)]); return m && m.kind === b.kind && m.x === x && m.z === z && !(m.cons > 0) && (m.h || 0) === h0 ? m : null; };
+      const at = (x, z) => { if (extra && extra.x === x && extra.z === z) return extra; if (!this.inb(x, z)) return null; const m = this.bmap.get(this.bld[this.idx(x, z)]); return m && m.kind === b.kind && m.x === x && m.z === z && (loose || !(m.cons > 0)) && (m.h || 0) === h0 ? m : null; };
       const comp = [b], seen = new Set([b]);
       for (let i = 0; i < comp.length && comp.length < 240; i++) { const c = comp[i]; for (const [dx, dz] of [[S, 0], [-S, 0], [0, S], [0, -S]]) { const m = at(c.x + dx, c.z + dz); if (m && !seen.has(m)) { seen.add(m); comp.push(m); } } }
       return { comp, at, seen };
     }
     // divide o grupo em retângulos (de cima para baixo, da esquerda para a direita); cada retângulo é um complexo
-    comboRects(b, extra) {
-      const lim = COMBO[b.kind], S = b.size || 1, { comp, at, seen } = this.comboComp(b, extra);
+    comboRects(b, extra, loose) {
+      const lim = COMBO[b.kind], S = b.size || 1, { comp, at, seen } = this.comboComp(b, extra, loose);
       comp.sort((p, q) => p.z - q.z || p.x - q.x);
       const used = new Set(), out = [];
       for (const L of comp) {
@@ -977,11 +982,16 @@ const Sim = (function () {
       this._groups = map; this._grpDirty = false; return map;
     }
     groupOf(b) { return b && COMBO[b.kind] ? this.groups().get(b.id) || null : null; }
+    // quantos existem (um complexo ampliado conta como um só)
+    countOf(kind) { const seen = new Set(); let n = 0; for (const b of this.buildings) { if (b.kind !== kind || seen.has(b)) continue; n++; if (COMBO[kind]) for (const m of this.comboComp(b, null, true).comp) seen.add(m); } return n; }
+    // construir em (x, z) só amplia um conjunto que já existe (encostado e alinhado, sem passar do tamanho máximo)?
+    joinsCluster(kind, x, z) { const d = DEFS[kind], lim = COMBO[kind]; if (!lim || !d || !this.inb(x, z)) return false; const v = { id: -1, kind, x, z, size: d.size, h: this.height[this.idx(x, z)], cons: 0 }; const n = this.comboComp(v, v, true).comp.length; return n > 1 && n <= lim[0] * lim[1]; }
+    maxOf(kind) { return maxOf(kind, this.stats.pop); }
     // prévia: o complexo que se formaria construindo kind em (x, z)
-    groupPreview(kind, x, z) {
+    groupPreview(kind, x, z, loose) {
       const d = DEFS[kind]; if (!COMBO[kind] || !d || !this.inb(x, z)) return null;
       const v = { id: -1, kind, x, z, size: d.size, h: this.height[this.idx(x, z)], cons: 0 };
-      const g = this.comboRects(v, v).find(r => r.mem.includes(v));
+      const g = this.comboRects(v, v, loose).find(r => r.mem.includes(v));
       return g && g.n > 1 ? g : null;
     }
 
@@ -1711,7 +1721,7 @@ const Sim = (function () {
     }
   }
 
-  return { roadShape, COMBO, comboBonus, City, BUSINESS, businessOf, POLICIES, DEFS, HAND, TERRA, ROADS, ISSUE_TIPS, ZSTAT, SERVICE_KINDS, COV_KINDS, ZONE_NAMES, LEVEL_NAMES, TITLES, MISSIONS, ACHIEVEMENTS, SCENARIOS, T, Z, ZK, W, H, N, CHUNK, CX, PARCEL, PX, TH, MONTH_STEPS, mulberry32, hash2, clamp };
+  return { roadShape, COMBO, comboBonus, maxOf, City, BUSINESS, businessOf, POLICIES, DEFS, HAND, TERRA, ROADS, ISSUE_TIPS, ZSTAT, SERVICE_KINDS, COV_KINDS, ZONE_NAMES, LEVEL_NAMES, TITLES, MISSIONS, ACHIEVEMENTS, SCENARIOS, T, Z, ZK, W, H, N, CHUNK, CX, PARCEL, PX, TH, MONTH_STEPS, mulberry32, hash2, clamp };
 })();
 
 
@@ -1784,7 +1794,7 @@ const R3 = (function () {
   }
 
   /* ---------- atlas de texturas ---------- */
-  const CELL = { winA: [0, 0], winB: [1, 0], winC: [2, 0], winD: [3, 0], plain: [0, 1], roof: [1, 1], shop: [2, 1], factory: [3, 1], glassA: [0, 2], glassB: [1, 2], awning: [2, 2], wood: [3, 2], balcA: [4, 0], balcB: [5, 0], ribA: [6, 0], ribB: [7, 0], punA: [8, 0], punB: [9, 0], brA: [10, 0], brB: [11, 0], conA: [4, 1], conB: [5, 1], metal: [6, 1], metalW: [7, 1], store2: [8, 1], loftA: [9, 1], loftB: [10, 1], panel: [0, 3], door: [1, 3], garage: [2, 3], fence: [3, 3], glassdoor: [0, 4], tile: [1, 4], crowd: [2, 4], deck: [3, 4] };
+  const CELL = { winA: [0, 0], winB: [1, 0], winC: [2, 0], winD: [3, 0], plain: [0, 1], roof: [1, 1], shop: [2, 1], factory: [3, 1], glassA: [0, 2], glassB: [1, 2], awning: [2, 2], wood: [3, 2], balcA: [4, 0], balcB: [5, 0], ribA: [6, 0], ribB: [7, 0], punA: [8, 0], punB: [9, 0], brA: [10, 0], brB: [11, 0], conA: [4, 1], conB: [5, 1], metal: [6, 1], metalW: [7, 1], store2: [8, 1], loftA: [9, 1], loftB: [10, 1], panel: [0, 3], door: [1, 3], garage: [2, 3], fence: [3, 3], glassdoor: [0, 4], tile: [1, 4], crowd: [2, 4], deck: [3, 4], poster: [4, 2], marquee: [5, 2], ltrC: [6, 2], ltrI: [7, 2], ltrN: [8, 2], ltrE: [9, 2], posterB: [10, 2] };
   const uvCache = {};
   const ATLAS = 1024, PIX_Y = 256; // células procedurais (64 px) no canto superior esquerdo; abaixo, as fachadas em pixel art
   const SIGN_W = 256, SIGN_H = 40, SIGN_Y = 336;
@@ -1911,6 +1921,20 @@ const R3 = (function () {
     });
     cellAt('garage', d => { d.fillStyle = '#ffffff'; d.fillRect(0, 0, 64, 64); d.fillStyle = '#c4c4c4'; for (let y = 6; y < 64; y += 10) d.fillRect(3, y, 58, 2); d.fillStyle = '#a8a8a8'; d.fillRect(0, 0, 64, 4); d.fillRect(0, 0, 3, 64); d.fillRect(61, 0, 3, 64); });
     cellAt('fence', d => { d.clearRect(0, 0, 64, 64); d.fillStyle = '#ffffff'; for (let x = 2; x < 64; x += 12) { d.fillRect(x, 10, 7, 54); d.beginPath(); d.moveTo(x, 10); d.lineTo(x + 3.5, 3); d.lineTo(x + 7, 10); d.fill(); } d.fillRect(0, 22, 64, 5); d.fillRect(0, 46, 64, 5); });
+    // cinema: cartazes iluminados, marquise com lâmpadas e letras do letreiro vertical
+    const poster = (name, c0, c1, c2) => cellAt(name, (d, e) => {
+      d.fillStyle = '#f4f1ea'; d.fillRect(0, 0, 64, 64); const g = d.createLinearGradient(0, 4, 0, 60); g.addColorStop(0, c0); g.addColorStop(0.55, c1); g.addColorStop(1, c2); d.fillStyle = g; d.fillRect(6, 4, 52, 56);
+      d.fillStyle = 'rgba(10,10,20,0.9)'; d.beginPath(); d.moveTo(10, 60); d.lineTo(22, 34); d.lineTo(30, 42); d.lineTo(42, 24); d.lineTo(55, 60); d.fill(); d.beginPath(); d.arc(42, 18, 5, 0, 7); d.fillStyle = '#fff6c8'; d.fill();
+      d.fillStyle = '#ffffff'; d.fillRect(11, 8, 42, 6); d.fillRect(17, 16, 30, 3); e.fillStyle = 'rgba(255,236,200,0.42)'; e.fillRect(6, 4, 52, 56); e.fillStyle = 'rgba(255,255,255,0.8)'; e.fillRect(11, 8, 42, 6);
+    });
+    poster('poster', '#1a2a6c', '#b21f1f', '#fdbb2d'); poster('posterB', '#0f3d3e', '#2c7da0', '#f7e3af');
+    cellAt('marquee', (d, e) => {
+      d.fillStyle = '#fbfaf6'; d.fillRect(0, 0, 64, 64); e.fillStyle = '#f2ead2'; e.fillRect(0, 10, 64, 44);
+      for (let k = 0; k < 8; k++) for (const y of [5, 59]) { d.fillStyle = '#ffcc33'; d.beginPath(); d.arc(4 + k * 8, y, 2.6, 0, 7); d.fill(); e.fillStyle = '#ffe28a'; e.beginPath(); e.arc(4 + k * 8, y, 3.2, 0, 7); e.fill(); }
+      for (const [y, ws] of [[16, [9, 6, 12, 7, 10]], [35, [7, 11, 5, 9, 8, 6]]]) { let x = 5; for (const w of ws) { if (x + w > 60) break; d.fillStyle = '#1e1e24'; d.fillRect(x, y, w, 11); e.fillStyle = '#000000'; e.fillRect(x, y, w, 11); x += w + 3; } }
+    });
+    const letter = (name, paths) => cellAt(name, (d, e) => { d.fillStyle = '#4a1d70'; d.fillRect(0, 0, 64, 64); for (const g of [d, e]) { g.strokeStyle = g === d ? '#ffe9a8' : '#fff2c0'; g.lineWidth = 9; g.lineCap = 'round'; g.lineJoin = 'round'; g.beginPath(); for (const pth of paths) { g.moveTo(pth[0], pth[1]); for (let k = 2; k < pth.length; k += 2) g.lineTo(pth[k], pth[k + 1]); } g.stroke(); } });
+    letter('ltrC', [[46, 14, 24, 12, 16, 24, 16, 40, 24, 52, 46, 50]]); letter('ltrI', [[32, 12, 32, 52], [22, 12, 42, 12], [22, 52, 42, 52]]); letter('ltrN', [[18, 52, 18, 12, 46, 52, 46, 12]]); letter('ltrE', [[46, 12, 18, 12, 18, 52, 46, 52], [18, 32, 40, 32]]);
     cellAt('glassdoor', (d, e) => {
       d.fillStyle = '#e9e6df'; d.fillRect(0, 0, 64, 64);
       d.fillStyle = '#3b5a85'; d.fillRect(5, 6, 25, 58); d.fillRect(34, 6, 25, 58);
@@ -2401,7 +2425,7 @@ const R3 = (function () {
   function entrance(tb, r, x0, x1, z1, col, fh) {
     const dx = (x0 + x1) / 2, w = Math.min(0.11, (x1 - x0) * 0.2), hgt = Math.min(0.24, fh * 0.8);
     solidBox(tb, dx - w - 0.02, 0, z1, dx + w + 0.02, hgt + 0.025, z1 + 0.014, [0.9, 0.89, 0.86]);
-    faceZ(tb, dx - w, dx + w, 0, hgt, z1 + 0.016, 'glassdoor', [1, 1, 1]);
+    faceZ(tb, dx - w, dx + w, 0, hgt, z1 + 0.016, 'glassdoor', [1, 1, 1]); entrance.door = { x: dx, z: z1 + 0.016, w: 2 * w, h: hgt, glass: true, leaves: 2 };
     solidBox(tb, dx - w - 0.05, hgt + 0.025, z1, dx + w + 0.05, hgt + 0.045, z1 + 0.1, col);
     solidBox(tb, dx - w - 0.03, 0, z1, dx + w + 0.03, 0.012, z1 + 0.08, [0.78, 0.77, 0.74]);
     for (const sx of [-1, 1]) { const px = dx + sx * (w + 0.06); solidBox(tb, px - 0.022, 0, z1 + 0.02, px + 0.022, 0.035, z1 + 0.064, [0.62, 0.42, 0.3]); const g = new GeoBuilder(); bush(g, px, z1 + 0.042, 0.03, pick(GREENS, r)); tb.merge(g, 0, 0, 0, 0.03); }
@@ -2451,8 +2475,8 @@ const R3 = (function () {
     }
     const zf = z + 0.965, lx0 = x + 0.035, lx1 = x + 0.965;
     const dx = lerp(x0 + 0.1, x1 - 0.1, r()), doorCol = pick(DOOR_COLS, r), light = [0.93, 0.91, 0.86];
-    const dh = Math.min(0.2, fh * 0.66);
-    if (r() < 0.45) {
+    const dh = Math.min(0.2, fh * 0.66), porch = r() < 0.45; houseExtras.door = { x: dx, z: z1 + (porch ? 0.074 : 0.014), w: 0.094, h: dh, col: doorCol };
+    if (porch) {
       // varanda de entrada: pequeno corpo saliente com telhadinho
       const pw = 0.085, pd = 0.07;
       solidBox(tb, dx - pw, 0, z1, dx + pw, dh + 0.03, z1 + pd, wall);
@@ -2517,8 +2541,64 @@ const R3 = (function () {
   }
 
   // Retorna meta: { top, emit: [{x,y,z,rate}] } (x/z do mundo já com rotação; y relativo ao chão do prédio)
+  // cinema de rua: sala sem janelas, fachada na cor da marca, marquise iluminada, cartazes e letreiro vertical "CINE"
+  function genCinema(gb, b, st, c) {
+    const { x, z, LW, LD, cx, cz, rot, r } = c, tb = new GeoBuilder(), biz = Sim.businessOf(b), BR = hexToRgb(biz.color), fh = st.floorH;
+    const x0 = x + 0.07, x1 = x + LW - 0.07, z0 = z + 0.08, zf = z + LD - 0.12, xc = (x0 + x1) / 2, W0 = x1 - x0;
+    const h = fh * (2.6 + 0.4 * Math.min(2, LW * LD - 1)), CREAM = [0.9, 0.85, 0.76], DARK = mul(BR, 0.75);
+    box(tb, x0 + 0.03, 0, z0, x1 - 0.03, h, zf - 0.1, { floors: 1, cell: 'plain', color: CREAM, roofColor: [0.55, 0.55, 0.58], r, top: true });
+    box(tb, x0, 0, zf - 0.1, x1, h + 0.06, zf, { floors: 1, cell: 'plain', color: BR, roofColor: mul(BR, 0.8), r, top: true });
+    band(tb, x0, zf - 0.1, x1, zf, h + 0.03, h + 0.07, [0.95, 0.85, 0.4]);
+    // térreo: portas de vidro no meio e cartazes iluminados dos lados
+    const dw = Math.min(0.3, W0 * 0.34), dh = Math.min(0.24, fh * 0.85);
+    faceZ(tb, xc - dw / 2, xc + dw / 2, 0, dh, zf + 0.004, 'glassdoor', [1, 1, 1]);
+    const np = W0 > 1.2 ? 3 : 2, pw = Math.max(0.06, Math.min(0.11, (W0 / 2 - dw / 2 - 0.08) / np - 0.03));
+    for (const sgn of [-1, 1]) for (let k = 0; k < np; k++) { const px = xc + sgn * (dw / 2 + 0.07 + pw / 2 + k * (pw + 0.035)); if (Math.abs(px - xc) + pw / 2 > W0 / 2 - 0.02) continue; solidBox(tb, px - pw / 2 - 0.012, 0.025, zf, px + pw / 2 + 0.012, 0.025 + pw * 1.45 + 0.024, zf + 0.012, [0.95, 0.85, 0.35]); faceZ(tb, px - pw / 2, px + pw / 2, 0.037, 0.037 + pw * 1.45, zf + 0.014, (k + (sgn > 0 ? 1 : 0)) % 2 ? 'posterB' : 'poster', [1, 1, 1]); }
+    // marquise com lâmpadas e os títulos em cartaz
+    const my0 = Math.max(dh + 0.05, fh * 1.05), my1 = my0 + 0.11, mz1 = zf + 0.17, mx0 = x0 + 0.02, mx1 = x1 - 0.02, mc = cellUV('marquee');
+    solidBox(tb, mx0, my0, zf, mx1, my1, mz1, [0.97, 0.96, 0.92]);
+    tb.quad([mx0, my0, mz1 + 0.002], [mx1, my0, mz1 + 0.002], [mx1, my1, mz1 + 0.002], [mx0, my1, mz1 + 0.002], mc, [1, 1, 1]);
+    tb.quad([mx1 + 0.002, my0, mz1], [mx1 + 0.002, my0, zf], [mx1 + 0.002, my1, zf], [mx1 + 0.002, my1, mz1], mc, [1, 1, 1]);
+    tb.quad([mx0 - 0.002, my0, zf], [mx0 - 0.002, my0, mz1], [mx0 - 0.002, my1, mz1], [mx0 - 0.002, my1, zf], mc, [1, 1, 1]);
+    tb.quad([mx0, my0 - 0.002, zf], [mx1, my0 - 0.002, zf], [mx1, my0 - 0.002, mz1], [mx0, my0 - 0.002, mz1], cellUV('glassdoor'), [1, 0.92, 0.6]);
+    signBoard(tb, biz, xc, my1 + 0.05, Math.min(W0 - 0.24, 0.62), zf, 0.02);
+    // letreiro vertical "CINE" na quina, passando do telhado
+    const bx = x1 - 0.08, by0 = my1 + 0.02, lh = Math.min(0.16, (h + 0.3 - by0) / 4), by1 = by0 + lh * 4 + 0.06, bz0 = zf, bz1 = zf + 0.15, th = 0.022, LT = ['ltrE', 'ltrN', 'ltrI', 'ltrC'];
+    solidBox(tb, bx - th, by0, bz0, bx + th, by1, bz1, DARK);
+    for (let k = 0; k < 4; k++) { const ya = by0 + 0.03 + k * lh, yb = ya + lh, u = cellUV(LT[k]); tb.quad([bx + th + 0.002, ya, bz1 - 0.01], [bx + th + 0.002, ya, bz0 + 0.01], [bx + th + 0.002, yb, bz0 + 0.01], [bx + th + 0.002, yb, bz1 - 0.01], u, [1, 1, 1]); tb.quad([bx - th - 0.002, ya, bz0 + 0.01], [bx - th - 0.002, ya, bz1 - 0.01], [bx - th - 0.002, yb, bz1 - 0.01], [bx - th - 0.002, yb, bz0 + 0.01], u, [1, 1, 1]); }
+    solidBox(tb, bx - th - 0.006, by1, bz0 - 0.005, bx + th + 0.006, by1 + 0.03, bz1 + 0.005, [0.95, 0.8, 0.3]);
+    // cobertura, saída de emergência na lateral e calçada de entrada
+    solidBox(tb, x0 + 0.12, h, z0 + 0.12, x0 + 0.34, h + 0.1, z0 + 0.3, [0.68, 0.68, 0.7]); solidBox(tb, x1 - 0.32, h, z0 + 0.1, x1 - 0.12, h + 0.07, z0 + 0.26, [0.72, 0.72, 0.74]);
+    tb.quad([x1 - 0.026, 0, z0 + 0.36], [x1 - 0.026, 0, z0 + 0.24], [x1 - 0.026, 0.18, z0 + 0.24], [x1 - 0.026, 0.18, z0 + 0.36], cellUV('door'), [0.75, 0.2, 0.2]);
+    solidBox(tb, xc - dw / 2 - 0.08, 0, zf, xc + dw / 2 + 0.08, 0.012, z + LD - 0.02, [0.8, 0.78, 0.74]);
+    gb.merge(tb, cx, cz, rot, b.h * TH, { vac: 0, k: 1.2 });
+    const meta = { top: Math.max(h + 0.07, by1 + 0.03), emit: [] }; meta.door = doorWorld({ x: xc, z: zf + 0.004, w: dw, h: dh, glass: true, leaves: 2 }, cx, cz, rot);
+    return meta;
+  }
+  // ----- portas que abrem quando alguém entra ou sai -----
+  const doorOpen = new Map(); let doorHole = null, doorLeaf = null;
+  function openDoor(b) { if (!b) return; const m = bmeta.get(b.id); if (!m || !m.door) return; const o = doorOpen.get(b.id); if (o) o.t = Math.max(o.t, 1.3); else doorOpen.set(b.id, { t: 1.3, a: 0, b }); }
+  function updateDoors(dt) {
+    if (!doorHole) { doorHole = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ color: 0x15171c }), 64); doorLeaf = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ color: 0xffffff }), 128); doorLeaf.setColorAt(0, new THREE.Color(1, 1, 1)); doorHole.frustumCulled = doorLeaf.frustumCulled = false; doorHole.count = doorLeaf.count = 0; scene.add(doorHole); scene.add(doorLeaf); }
+    let nh = 0, nl = 0; const col = new THREE.Color();
+    for (const [id, o] of doorOpen) {
+      o.t -= dt; o.a = clamp(o.a + (o.t > 0 ? dt : -dt) / 0.28, 0, 1);
+      const m = bmeta.get(id), b = o.b; if ((o.t <= 0 && o.a <= 0) || !m || !m.door || city.bmap.get(id) !== b) { doorOpen.delete(id); continue; }
+      if (nh >= 64 || nl >= 126) continue;
+      const D = m.door, y0 = b.h * TH, e = o.a * o.a * (3 - 2 * o.a), th = e * 1.35, Tx = D.fz, Tz = -D.fx, phi = Math.atan2(D.fx, D.fz);
+      dummy.position.set(D.x + D.fx * 0.002, y0 + D.h / 2, D.z + D.fz * 0.002); dummy.rotation.set(0, phi, 0); dummy.scale.set(D.w * 0.96, D.h, 0.004); dummy.updateMatrix(); doorHole.setMatrixAt(nh++, dummy.matrix);
+      if (D.glass) col.setRGB(0.55, 0.72, 0.86); else if (D.col) col.setRGB(D.col[0], D.col[1], D.col[2]); else col.setRGB(0.45, 0.3, 0.2);
+      const leaves = D.leaves === 2 ? [[-1, D.w / 2], [1, D.w / 2]] : [[-1, D.w]];
+      for (const [sg, lw] of leaves) {
+        const hx = D.x + sg * Tx * D.w / 2 + D.fx * 0.006, hz = D.z + sg * Tz * D.w / 2 + D.fz * 0.006, dx = -sg * Tx * Math.cos(th) + D.fx * Math.sin(th), dz = -sg * Tz * Math.cos(th) + D.fz * Math.sin(th);
+        dummy.position.set(hx + dx * lw / 2, y0 + D.h / 2, hz + dz * lw / 2); dummy.rotation.set(0, Math.atan2(-dz, dx), 0); dummy.scale.set(lw, D.h, 0.012); dummy.updateMatrix(); doorLeaf.setMatrixAt(nl, dummy.matrix); doorLeaf.setColorAt(nl, col); nl++;
+      }
+    }
+    doorHole.count = nh; doorLeaf.count = nl; doorHole.instanceMatrix.needsUpdate = true; doorLeaf.instanceMatrix.needsUpdate = true; if (doorLeaf.instanceColor) doorLeaf.instanceColor.needsUpdate = true;
+  }
+  const isCine = b => b.kind === 'C' && !b.abandoned && !b.burning && /^Cine /.test((Sim.businessOf(b) || {}).name || '');
   function genZoneBuilding(gb, b, st, city) {
-    if (st.pixel && pixelReady && !b.w) {
+    if (st.pixel && pixelReady && !b.w && !isCine(b)) {
       const list = PIXEL_HOUSES[b.kind][b.level - 1]; const meta = genPixelHouse(gb, b, city, list[b.seed % list.length], 1);
       if (meta) return meta;
     }
@@ -2535,6 +2615,7 @@ const R3 = (function () {
       x0 = ccx - w / 2; x1 = ccx + w / 2; z0 = ccz - d / 2; z1 = ccz + d / 2;
     }
     const hightech = b.kind === 'I' && b.level === 3 && ((b.seed >>> 5) % 10) < 3;
+    if (isCine(b)) return genCinema(gb, b, st, { x, z, LW, LD, x0, x1, z0, z1, cx, cz, rot, r });
     let floors = randInt(cfg.floors[b.level - 1], r) + (big && b.kind !== 'I' ? (BW * BD >= 4 ? 2 : 1) : 0);
     const fh = st.floorH * (b.kind === 'C' && b.level === 1 ? 1.25 : 1) * (b.kind === 'I' ? 1.35 : 1);
     let h = floors * fh;
@@ -2666,10 +2747,11 @@ const R3 = (function () {
     else if (roofType === 'hip') hipRoof(tb, x0, x1, z0, z1, h, 0.2 + 0.06 * b.level, roofCol, overhang);
     const meta = { top: Math.max(h + (flat ? 0 : 0.2), crownTop), emit: [] };
     if (b.abandoned) { gb.merge(tb, cx, cz, rot, b.h * TH); return meta; }
-    if (b.kind === 'R' && b.level === 1) houseExtras(tb, Sim.mulberry32(b.seed ^ 0x5bd1e995), x, z, x0, x1, z0, z1, h, fh, wall, roofCol, trim);
+    let doorL = null;
+    if (b.kind === 'R' && b.level === 1) { houseExtras.door = null; houseExtras(tb, Sim.mulberry32(b.seed ^ 0x5bd1e995), x, z, x0, x1, z0, z1, h, fh, wall, roofCol, trim); doorL = houseExtras.door; }
     else if (b.kind === 'R' || (b.kind === 'C' && b.level >= 2) || hightech) {
       const er = Sim.mulberry32(b.seed ^ 0x2545f491);
-      entrance(tb, er, x0, x1, z1, trim || mul(roofCol, 0.9), fh);
+      entrance(tb, er, x0, x1, z1, trim || mul(roofCol, 0.9), fh); doorL = entrance.door;
       if (hightech) { const biz = Sim.businessOf(b), sw = Math.min(x1 - x0 - 0.1, 0.66); signBoard(tb, biz, (x0 + x1) / 2, h - sw * SIGN_H / SIGN_W - 0.05, sw, z1, 0.016); }
       if (b.level >= 2 && !hightech) { const tt = towerExtras(tb, er, b, x0, x1, z0, z1, h, fh, floors, wall, roofCol, trim, roofFree, st, !!(feat.balcony && b.kind === 'R')); if (tt) meta.top = tt; }
       if (b.kind === 'R' && b.level === 2) { const g = pick(GREENS, er); solidBox(tb, x + 0.03, 0, z + LD - 0.045, (x0 + x1) / 2 - 0.16, 0.06, z + LD - 0.015, g); solidBox(tb, (x0 + x1) / 2 + 0.16, 0, z + LD - 0.045, x + LW - 0.03, 0.06, z + LD - 0.015, g); }
@@ -2677,6 +2759,7 @@ const R3 = (function () {
       const gw = Math.min(0.16, (x1 - x0) * 0.25), gx = x0 + (x1 - x0) * 0.3;
       solidBox(tb, gx - gw - 0.015, 0, z1, gx + gw + 0.015, 0.235, z1 + 0.01, [0.45, 0.45, 0.48]);
       faceZ(tb, gx - gw, gx + gw, 0, 0.22, z1 + 0.012, 'garage', [0.8, 0.82, 0.86]);
+      { const px = Math.min(x1 - 0.07, gx + gw + 0.1); faceZ(tb, px - 0.045, px + 0.045, 0, 0.19, z1 + 0.004, 'door', [0.35, 0.4, 0.48]); doorL = { x: px, z: z1 + 0.004, w: 0.09, h: 0.19 }; }
       { const biz = Sim.businessOf(b), sw = Math.min(x1 - x0 - 0.1, 0.62); signBoard(tb, biz, (x0 + x1) / 2, Math.min(h - sw * SIGN_H / SIGN_W - 0.03, 0.27), sw, z1, 0.016); }
       const er = Sim.mulberry32(b.seed ^ 0x7f4a7c15);
       for (let k = 0, n = 1 + Math.floor(er() * 3); k < n; k++) { const bx = lerp(gx + gw + 0.06, x1 - 0.05, er()), s2 = 0.03 + er() * 0.015; solidBox(tb, bx - s2, 0, z1 + 0.012, bx + s2, s2 * 2, z1 + 0.012 + s2 * 2, pick([[0.72, 0.55, 0.32], [0.3, 0.5, 0.7], [0.75, 0.35, 0.25]], er), 'wood'); }
@@ -2695,6 +2778,7 @@ const R3 = (function () {
       }
     }
     if (b.kind === 'C' && b.level === 1) {
+      doorL = { x: (x0 + x1) / 2, z: z1 + 0.003, w: 0.11, h: Math.min(0.22, fh * 0.72), glass: true };
       const ins = 0.06, biz = Sim.businessOf(b), sw = Math.min(x1 - x0 - 0.06, 0.7);
       signBoard(tb, biz, (x0 + x1) / 2, h - 0.1, sw, z1 - 0.01, 0.05);
       if (feat.awning && st.awnings) {
@@ -2738,13 +2822,16 @@ const R3 = (function () {
       if (b.kind !== 'R') for (const sx of [x + margin * 0.45, x + LW - margin * 0.45]) yardTree(tb, sx, z + margin * 0.6, yr);
     }
     gb.merge(tb, cx, cz, rot, b.h * TH, { dark: b.abandoned, vac: (1 - (b.occ === undefined ? 1 : b.occ)) * 0.6, k: b.kind === 'R' ? 1 : 0.5 });
+    if (doorL) meta.door = doorWorld(doorL, cx, cz, rot);
     return meta;
   }
+  // porta (coordenadas locais, frente em +z) → mundo, com a normal para fora
+  function doorWorld(dl, cx, cz, rot) { const [wx, wz] = rotPt(dl.x, dl.z, cx, cz, rot), [nx, nz] = rotPt(0, 1, 0, 0, rot); return { x: wx, z: wz, fx: nx, fz: nz, w: dl.w, h: dl.h, glass: !!dl.glass, leaves: dl.leaves || 1, col: dl.col || null }; }
 
   /* ---------- complexos: construções iguais encostadas viram um prédio só, maior ---------- */
   // tipos com desenho próprio de complexo; os demais (metrô, aterro, reciclagem, eólicas, termelétrica) ganham só o efeito
-  const COMBO_VIS = { police: 1, fire: 1, parking: 1, school: 1, hospital: 1, university: 1, park: 1, plaza: 1, garden: 1, playground: 1, fountain: 1, bus: 1, solar: 1, water: 1 };
-  const FLAT_COMBO = { park: 1, plaza: 1, garden: 1, playground: 1, fountain: 1, solar: 1, water: 1 };
+  const COMBO_VIS = { police: 1, fire: 1, parking: 1, school: 1, hospital: 1, university: 1, park: 1, plaza: 1, garden: 1, playground: 1, fountain: 1, bus: 1, solar: 1, water: 1, amusement: 1, metro: 1, landfill: 1, recycling: 1, coal: 1, wind: 1 };
+  const FLAT_COMBO = { park: 1, plaza: 1, garden: 1, playground: 1, fountain: 1, solar: 1, water: 1, wind: 1 };
   const comboRole = new Map(), chunkMates = new Map();
   function comboOf(b) { if (!COMBO_VIS[b.kind] || b.cons > 0 || !city || city.bmap.get(b.id) !== b) return null; return city.groupOf(b); }
   // chão: faixa entre dois pontos, elipse, anel de elipse e laço retangular de cantos redondos
@@ -2831,7 +2918,14 @@ const R3 = (function () {
     const heli = (hx, hy, hz, rad) => { cylinder(tb, hx, hz, rad, hy, hy + 0.012, 14, [0.36, 0.37, 0.4], [0.36, 0.37, 0.4]); cylinder(tb, hx, hz, rad * 0.82, hy + 0.012, hy + 0.016, 14, [0.95, 0.95, 0.95], [0.3, 0.31, 0.34]); solidBox(tb, hx - rad * 0.3, hy + 0.016, hz - rad * 0.38, hx - rad * 0.2, hy + 0.02, hz + rad * 0.38, [0.96, 0.96, 0.96]); solidBox(tb, hx + rad * 0.2, hy + 0.016, hz - rad * 0.38, hx + rad * 0.3, hy + 0.02, hz + rad * 0.38, [0.96, 0.96, 0.96]); solidBox(tb, hx - rad * 0.2, hy + 0.016, hz - rad * 0.05, hx + rad * 0.2, hy + 0.02, hz + rad * 0.05, [0.96, 0.96, 0.96]); };
     const flag = (fx, fz, col) => { solidBox(tb, fx - 0.012, 0, fz - 0.012, fx + 0.012, 0.9, fz + 0.012, [0.8, 0.8, 0.82]); solidBox(tb, fx + 0.012, 0.74, fz - 0.005, fx + 0.24, 0.9, fz + 0.005, col); };
     const lot = (x0, z0, x1, z1, cars) => { tb.top(x0, z0, x1, z1, 0.011, roofC, [0.33, 0.34, 0.37]); const k = Math.max(1, Math.floor((x1 - x0 - 0.08) / 0.2)); for (let i = 0; i <= k; i++) tb.top(x0 + 0.04 + i * 0.2, z0 + 0.04, x0 + 0.055 + i * 0.2, z1 - 0.04, 0.013, roofC, [0.9, 0.9, 0.9]); for (let i = 0; i < k; i++) if (r() < cars) { const gg = new GeoBuilder(); parkedCar(gg, x0 + 0.145 + i * 0.2, (z0 + z1) / 2, r, Math.min(0.78, (z1 - z0 - 0.06) / 0.36)); tb.merge(gg, 0, 0, 0, 0.012); } };
+    const ctx = { x, z, X1, Z1, LW, LD, xc, zc, n, r, fh, meta, cx, cz, rot };
     switch (L.kind) {
+      case 'amusement': comboAmuse(tb, ctx); break;
+      case 'metro': comboMetro(tb, ctx); break;
+      case 'landfill': comboLandfill(tb, ctx); break;
+      case 'recycling': comboRecycling(tb, ctx); break;
+      case 'coal': comboCoal(tb, ctx); break;
+      case 'wind': comboWind(tb, ctx); break;
       case 'park': {     // parque municipal: gramado inteiro, caminho em laço, entradas, lago com borda de pedra e coreto
         const P = parkLayout(g), G = [0.5, 0.79, 0.41], PATH = [0.86, 0.8, 0.64], RIM = [0.72, 0.7, 0.64], WAT = [0.33, 0.6, 0.86], y = 0.013;
         tb.top(x + 0.02, z + 0.02, X1 - 0.02, Z1 - 0.02, 0.011, roofC, G);
@@ -3038,6 +3132,191 @@ const R3 = (function () {
     }
     gb.merge(tb, cx, cz, rot, L.h * TH);
     return meta;
+  }
+  // ----- complexos ampliados: metrô, aterro, reciclagem, termelétrica, parque eólico e parque de diversões -----
+  // abóbada de meia cana sobre [x0, x1] (ao longo de x), arco em z de z0 a z1, nascendo na altura y
+  function vault(tb, x0, x1, z0, z1, y, rise, col, ribCol) {
+    const segs = 10, zc = (z0 + z1) / 2, hz = (z1 - z0) / 2, P = k => { const a = Math.PI * k / segs; return [zc - Math.cos(a) * hz, y + Math.sin(a) * rise]; };
+    for (let k = 0; k < segs; k++) { const [za, ya] = P(k), [zb, yb] = P(k + 1), am = Math.PI * (k + 0.5) / segs; tb.quadOut([x0, ya, za], [x1, ya, za], [x1, yb, zb], [x0, yb, zb], col, 0, Math.sin(am), -Math.cos(am)); }
+    for (const [xx, s] of [[x0, -1], [x1, 1]]) for (let k = 0; k < segs; k++) { const [za, ya] = P(k), [zb, yb] = P(k + 1); tb.quadOut([xx, y, za], [xx, ya, za], [xx, yb, zb], [xx, y, zb], col, s, 0, 0); }
+    if (ribCol) { const nr = Math.max(2, Math.round((x1 - x0) / 0.32)); for (let q = 0; q <= nr; q++) { const rx = lerp(x0 + 0.01, x1 - 0.01, q / nr); for (let k = 0; k < segs; k++) { const [za, ya] = P(k), [zb, yb] = P(k + 1), am = Math.PI * (k + 0.5) / segs, ox = 0.006 * Math.sin(am), oz = -0.006 * Math.cos(am); tb.quadOut([rx - 0.012, ya + ox, za + oz], [rx + 0.012, ya + ox, za + oz], [rx + 0.012, yb + ox, zb + oz], [rx - 0.012, yb + ox, zb + oz], ribCol, 0, Math.sin(am), -Math.cos(am)); } } }
+  }
+  // tubo aberto (sem tampa): torre de resfriamento, chaminé larga
+  function tube(tb, cx, cz, r0, r1, y0, y1, segs, col) {
+    for (let k = 0; k < segs; k++) { const a0 = k / segs * Math.PI * 2, a1 = (k + 1) / segs * Math.PI * 2, am = (a0 + a1) / 2; tb.quadOut([cx + Math.cos(a0) * r0, y0, cz + Math.sin(a0) * r0], [cx + Math.cos(a0) * r1, y1, cz + Math.sin(a0) * r1], [cx + Math.cos(a1) * r1, y1, cz + Math.sin(a1) * r1], [cx + Math.cos(a1) * r0, y0, cz + Math.sin(a1) * r0], col, Math.cos(am), 0.2, Math.sin(am)); }
+  }
+  // caminhãozinho parado (ao longo de x ou de z), cabine do lado +
+  function miniTruck(tb, cx, cz, alongX, col, load) {
+    const L = 0.17, Wd = 0.065, B = (a0, y0, b0, a1, y1, b1, c) => alongX ? solidBox(tb, cx + a0, y0, cz + b0, cx + a1, y1, cz + b1, c) : solidBox(tb, cx + b0, y0, cz + a0, cx + b1, y1, cz + a1, c);
+    B(-L, 0.02, -Wd, L * 0.45, 0.1, Wd, load || [0.85, 0.85, 0.82]); B(L * 0.5, 0.02, -Wd * 0.95, L, 0.085, Wd * 0.95, col); B(L * 0.62, 0.065, -Wd * 0.96, L * 0.95, 0.082, Wd * 0.96, [0.25, 0.32, 0.4]);
+    for (const a of [-L * 0.7, -L * 0.25, L * 0.72]) for (const b of [-Wd, Wd - 0.012]) B(a - 0.022, 0, b, a + 0.022, 0.035, b + 0.012, [0.12, 0.12, 0.12]);
+  }
+  // posições do parque de diversões ampliado (coordenadas locais a partir do canto do lote; frente em +z)
+  function amuseLayout(LW, LD) {
+    const big = LW >= 6 && LD >= 6, wide = LW > LD;
+    const o = big ? { wheel: [1.35, 1.35, 1.55], car: [[4.65, 4.55], [1.45, 4.6]], swing: [[4.6, 2.05]], drop: [[5.2, 0.85]], plaza: [3, 3.15] }
+      : wide ? { wheel: [1.05, 1.05, 1.3], car: [[4.85, 1.95]], swing: [[3.15, 1.0]], drop: [[5.35, 0.62]], plaza: [3, 2.1] }
+      : { wheel: [1.05, 1.05, 1.3], car: [[1.95, 4.75]], swing: [[2.0, 2.75]], drop: [[0.62, 4.3]], plaza: [1.5, 3.9] };
+    // montanha-russa: laço em volta do parque, por dentro da cerca; passa alto por cima da entrada
+    const m = 0.24, rr = 0.55, pts = [], x0 = m, z0 = m, x1 = LW - m, z1 = LD - m, per = 2 * (x1 - x0 + z1 - z0 - 4 * rr) + 2 * Math.PI * rr;
+    const at = d => { d = ((d % per) + per) % per; const sx = x1 - x0 - 2 * rr, sz = z1 - z0 - 2 * rr, arc = Math.PI * rr / 2; const segs = [[sx, 'S', x0 + rr, z0, 1, 0], [arc, 'A', x1 - rr, z0 + rr, -Math.PI / 2], [sz, 'S', x1, z0 + rr, 0, 1], [arc, 'A', x1 - rr, z1 - rr, 0], [sx, 'S', x1 - rr, z1, -1, 0], [arc, 'A', x0 + rr, z1 - rr, Math.PI / 2], [sz, 'S', x0, z1 - rr, 0, -1], [arc, 'A', x0 + rr, z0 + rr, Math.PI]];
+      for (const s of segs) { if (d <= s[0]) { if (s[1] === 'S') return [s[2] + s[4] * d, s[3] + s[5] * d]; const a = s[4] + d / rr; return [s[2] + Math.cos(a) * rr, s[3] + Math.sin(a) * rr]; } d -= s[0]; } return [x0 + rr, z0]; };
+    const bump = (s, c, w) => { const q = ((s - c + 1.5) % 1 - 0.5) / w; return Math.exp(-q * q); }, N = Math.max(70, Math.round(per / 0.12));
+    for (let k = 0; k < N; k++) { const s = k / N, [px, pz] = at(s * per); pts.push([px, 0.46 + 0.95 * bump(s, 0.1, 0.07) + 0.5 * bump(s, 0.3, 0.05) + 0.4 * bump(s, 0.5, 0.05) + 0.3 * bump(s, 0.66, 0.045) + 0.22 * bump(s, 0.86, 0.04), pz]); }
+    o.coaster = pts; return o;
+  }
+  function comboAmuse(tb, c) {
+    const { x, z, X1, Z1, LW, LD, xc, n, r, meta } = c, roofC = cellUV('roof'), T = (x0, z0, x1, z1, y, col) => tb.top(x0, z0, x1, z1, y, roofC, col), lay = amuseLayout(LW, LD);
+    T(x + 0.03, z + 0.03, X1 - 0.03, Z1 - 0.03, 0.012, [0.82, 0.76, 0.64]);
+    const PATH = [0.93, 0.6, 0.48], P2 = [0.95, 0.82, 0.5], pl = lay.plaza;
+    gStrip(tb, xc, Z1 - 0.05, x + pl[0], z + pl[1], 0.17, 0.016, PATH); gStrip(tb, x + 0.35, z + pl[1], X1 - 0.35, z + pl[1], 0.12, 0.017, P2); if (LD >= 6) gStrip(tb, x + pl[0], z + 0.4, x + pl[0], Z1 - 0.4, 0.12, 0.017, P2);
+    gDisc(tb, x + pl[0], z + pl[1], 0.42, 0.42, 0.018, [0.88, 0.84, 0.76], 18); cylinder(tb, x + pl[0], z + pl[1], 0.2, 0.0, 0.07, 12, [0.85, 0.83, 0.78], [0.38, 0.66, 0.92]); cylinder(tb, x + pl[0], z + pl[1], 0.03, 0.07, 0.2, 6, [0.85, 0.83, 0.78]);
+    const FC = [0.97, 0.96, 0.92];
+    fenceRun(tb, x + 0.04, z + 0.04, X1 - 0.04, z + 0.04, FC, 0.1); fenceRun(tb, x + 0.04, z + 0.04, x + 0.04, Z1 - 0.04, FC, 0.1); fenceRun(tb, X1 - 0.04, z + 0.04, X1 - 0.04, Z1 - 0.04, FC, 0.1);
+    fenceRun(tb, x + 0.04, Z1 - 0.04, xc - 0.42, Z1 - 0.04, FC, 0.1); fenceRun(tb, xc + 0.42, Z1 - 0.04, X1 - 0.04, Z1 - 0.04, FC, 0.1);
+    archSign(tb, xc, Z1 - 0.06, 0.78, Sim.BUSINESS.length + 2, '#c2185b', [0.85, 0.2, 0.3]);
+    for (const sx of [-1, 1]) { solidBox(tb, xc + sx * 0.62 - 0.12, 0, Z1 - 0.3, xc + sx * 0.62 + 0.12, 0.2, Z1 - 0.1, [0.95, 0.93, 0.88]); solidBox(tb, xc + sx * 0.62 - 0.14, 0.2, Z1 - 0.32, xc + sx * 0.62 + 0.14, 0.23, Z1 - 0.08, [0.85, 0.2, 0.3]); }   // bilheterias
+    // roda-gigante grande (a roda gira à parte)
+    { const [wx0, wz0, sc] = lay.wheel, wx = x + wx0, wz = z + wz0, hubY = 1.02 * sc, LEG = [0.9, 0.9, 0.93];
+      for (const sz of [-0.11 * sc, 0.11 * sc]) for (const sx of [-1, 1]) { const A = [wx + sx * 0.42 * sc, 0, wz + sz], B = [wx, hubY, wz + sz]; tb.quadOut([A[0] - 0.03, 0, A[2]], [A[0] + 0.03, 0, A[2]], [B[0] + 0.03, hubY, B[2]], [B[0] - 0.03, hubY, B[2]], LEG, 0, 0, Math.sign(sz)); tb.quadOut([A[0] - 0.03, 0, A[2]], [A[0] + 0.03, 0, A[2]], [B[0] + 0.03, hubY, B[2]], [B[0] - 0.03, hubY, B[2]], LEG, 0, 0, -Math.sign(sz)); }
+      solidBox(tb, wx - 0.55 * sc, 0, wz - 0.18 * sc, wx + 0.55 * sc, 0.03, wz + 0.18 * sc, [0.5, 0.5, 0.55]); solidBox(tb, wx - 0.14, 0.03, wz + 0.22 * sc, wx + 0.14, 0.2, wz + 0.22 * sc + 0.16, [0.3, 0.5, 0.8]); meta.top = Math.max(meta.top, hubY + 0.8 * sc); }
+    // bases do carrossel, do chapéu mexicano e da torre de queda (as partes que mexem são animadas à parte)
+    for (const [px, pz] of lay.car) cylinder(tb, x + px, z + pz, 0.42, 0, 0.05, 14, [0.75, 0.3, 0.35], [0.9, 0.8, 0.6]);
+    for (const [px, pz] of lay.swing) { cylinder(tb, x + px, z + pz, 0.5, 0, 0.03, 16, [0.55, 0.55, 0.6], [0.8, 0.78, 0.72]); cylinder(tb, x + px, z + pz, 0.05, 0.03, 0.66, 8, [0.95, 0.8, 0.2]); }
+    for (const [px, pz] of lay.drop) { const tx = x + px, tz = z + pz; solidBox(tb, tx - 0.2, 0, tz - 0.2, tx + 0.2, 0.04, tz + 0.2, [0.5, 0.5, 0.55]); for (let k = 0; k < 9; k++) solidBox(tb, tx - 0.05, 0.04 + k * 0.24, tz - 0.05, tx + 0.05, 0.04 + (k + 1) * 0.24, tz + 0.05, k % 2 ? [0.92, 0.92, 0.95] : [0.85, 0.22, 0.25]); solidBox(tb, tx - 0.08, 2.2, tz - 0.08, tx + 0.08, 2.3, tz + 0.08, [0.95, 0.8, 0.2]); meta.top = Math.max(meta.top, 2.3); }
+    // montanha-russa: trilhos, dormentes, pilares e um trem parado na subida
+    const C = lay.coaster, RAIL = [0.85, 0.2, 0.25], SUP = [0.88, 0.88, 0.9];
+    for (let k = 0; k < C.length; k++) {
+      const A = C[k], B = C[(k + 1) % C.length], dx = B[0] - A[0], dz = B[2] - A[2], l = Math.hypot(dx, dz) || 1, nx = -dz / l, nz = dx / l;
+      for (const off of [-0.04, 0.04]) { const ax = x + A[0] + nx * off, az = z + A[2] + nz * off, bx = x + B[0] + nx * off, bz = z + B[2] + nz * off; tb.quadOut([ax - nx * 0.01, A[1], az - nz * 0.01], [ax + nx * 0.01, A[1], az + nz * 0.01], [bx + nx * 0.01, B[1], bz + nz * 0.01], [bx - nx * 0.01, B[1], bz - nz * 0.01], RAIL, 0, 1, 0); tb.quadOut([ax, A[1], az], [bx, B[1], bz], [bx, B[1] - 0.025, bz], [ax, A[1] - 0.025, az], RAIL, nx * Math.sign(off), 0, nz * Math.sign(off)); }
+      tb.quadOut([x + A[0] - nx * 0.05, A[1] - 0.012, z + A[2] - nz * 0.05], [x + A[0] + nx * 0.05, A[1] - 0.012, z + A[2] + nz * 0.05], [x + A[0] + nx * 0.05 + dx / l * 0.02, A[1] - 0.012, z + A[2] + nz * 0.05 + dz / l * 0.02], [x + A[0] - nx * 0.05 + dx / l * 0.02, A[1] - 0.012, z + A[2] - nz * 0.05 + dz / l * 0.02], [0.4, 0.3, 0.25], 0, 1, 0);
+      if (k % 4 === 0) solidBox(tb, x + A[0] - 0.014, 0, z + A[2] - 0.014, x + A[0] + 0.014, A[1] - 0.02, z + A[2] + 0.014, SUP);
+    }
+    { const k0 = Math.floor(C.length * 0.05); for (let q = 0; q < 4; q++) { const P = C[(k0 + q * 2) % C.length]; solidBox(tb, x + P[0] - 0.045, P[1], z + P[2] - 0.045, x + P[0] + 0.045, P[1] + 0.06, z + P[2] + 0.045, [[0.2, 0.5, 0.9], [0.95, 0.8, 0.2], [0.2, 0.7, 0.4], [0.9, 0.3, 0.6]][q]); } }
+    meta.top = Math.max(meta.top, 1.5);
+    // tendas, barracas de comida, bancos e árvores
+    const TENT = [[0.9, 0.2, 0.25], [0.2, 0.5, 0.85], [0.95, 0.6, 0.15], [0.3, 0.65, 0.4]], sp = [];
+    for (let tz = 0.7; tz < LD - 0.5; tz += 1.1) for (let tx = 0.7; tx < LW - 0.5; tx += 1.1) sp.push([tx, tz]);
+    const busy = (px, pz) => { if (Math.hypot(px - lay.wheel[0], pz - lay.wheel[1]) < 0.75 * lay.wheel[2]) return true; for (const q of [...lay.car, ...lay.swing]) if (Math.hypot(px - q[0], pz - q[1]) < 0.75) return true; for (const q of lay.drop) if (Math.hypot(px - q[0], pz - q[1]) < 0.45) return true; if (Math.hypot(px - lay.plaza[0], pz - lay.plaza[1]) < 0.65) return true; if (Math.abs(px - LW / 2) < 0.4 && pz > lay.plaza[1]) return true; return Math.abs(pz - lay.plaza[1]) < 0.25; };
+    let q = 0; for (const [tx, tz] of sp) { if (busy(tx, tz)) continue; const px = x + tx, pz = z + tz, k = q++ % 3;
+      if (k === 0) { cylinder(tb, px, pz, 0.22, 0, 0.14, 10, [0.95, 0.95, 0.9]); frustum(tb, px, pz, 0.26, 0.02, 0.14, 0.4, 10, TENT[q % 4], [1, 1, 1]); }
+      else if (k === 1) { solidBox(tb, px - 0.11, 0, pz - 0.08, px + 0.11, 0.15, pz + 0.08, [0.95, 0.93, 0.88]); solidBox(tb, px - 0.13, 0.15, pz - 0.1, px + 0.13, 0.18, pz + 0.1, TENT[(q + 1) % 4]); }
+      else { const g = new GeoBuilder(); yardTree(g, px, pz, r); tb.merge(g, 0, 0, 0, 0.012); } }
+    for (let k = 0; k < Math.min(8, 2 + n * 2); k++) { const t = (k + 0.5) / Math.min(8, 2 + n * 2), bx = x + 0.35 + t * (LW - 0.7), bz = z + lay.plaza[1] + (k % 2 ? 0.19 : -0.19); if (Math.abs(bx - (x + lay.plaza[0])) < 0.5) continue; solidBox(tb, bx - 0.07, 0.02, bz - 0.025, bx + 0.07, 0.06, bz + 0.025, [0.55, 0.38, 0.22]); }
+  }
+  // ----- brinquedos animados extras: chapéu mexicano e torre de queda -----
+  function makeSwing() {
+    const g = new THREE.Group(), top = new THREE.Group(); top.position.y = 0.66; g.add(top);
+    const cap = new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.14, 14), new THREE.MeshLambertMaterial({ color: 0x1e88e5, emissive: 0x64b5f6, emissiveIntensity: 0 })); cap.position.y = 0.07; top.add(cap);
+    const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.035, 14), new THREE.MeshLambertMaterial({ color: 0xfff3c4, emissive: 0xffd54f, emissiveIntensity: 0 })); top.add(rim);
+    const chainGeo = new THREE.BoxGeometry(0.006, 0.3, 0.006); chainGeo.translate(0, -0.15, 0); const seatGeo = new THREE.BoxGeometry(0.05, 0.02, 0.05), steel = new THREE.MeshLambertMaterial({ color: 0xcfd8dc }), SC = [0xe53935, 0xfdd835, 0x43a047, 0x8e24aa, 0xfb8c00];
+    for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2, piv = new THREE.Group(); piv.position.set(Math.cos(a) * 0.3, 0, Math.sin(a) * 0.3); piv.rotation.y = -a; const arm = new THREE.Group(); arm.rotation.z = -0.62; piv.add(arm); arm.add(new THREE.Mesh(chainGeo, steel)); const seat = new THREE.Mesh(seatGeo, new THREE.MeshLambertMaterial({ color: SC[k % 5] })); seat.position.y = -0.3; arm.add(seat); top.add(piv); }
+    g.userData.top = top; g.userData.mats = [cap.material, rim.material]; g.traverse(o => { if (o.isMesh) o.castShadow = true; }); return g;
+  }
+  function makeDrop() {
+    const g = new THREE.Group(), ring = new THREE.Group(); g.add(ring);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.08, 12), new THREE.MeshLambertMaterial({ color: 0x8e24aa, emissive: 0xce93d8, emissiveIntensity: 0 })); ring.add(body);
+    const SC = [0xfdd835, 0x43a047, 0xe53935, 0x1e88e5]; for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2, s = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.06, 0.045), new THREE.MeshLambertMaterial({ color: SC[k % 4] })); s.position.set(Math.cos(a) * 0.17, -0.02, Math.sin(a) * 0.17); ring.add(s); }
+    g.userData.ring = ring; g.userData.mats = [body.material]; g.userData.ph = Math.random(); g.traverse(o => { if (o.isMesh) o.castShadow = true; }); return g;
+  }
+  // ----- estação central de metrô -----
+  function comboMetro(tb, c) {
+    const { x, z, X1, Z1, LW, LD, xc, n, r, fh, meta } = c, roofC = cellUV('roof'), T = (x0, z0, x1, z1, y, col) => tb.top(x0, z0, x1, z1, y, roofC, col);
+    const PAV = [0.78, 0.77, 0.74], GL = [0.62, 0.78, 0.9], ST = [0.86, 0.87, 0.9], BL = [0.12, 0.35, 0.78];
+    T(x + 0.02, z + 0.02, X1 - 0.02, Z1 - 0.02, 0.011, PAV);
+    const front = Z1 - Math.min(0.75, LD * 0.24), hz0 = z + (LD >= 4 ? 0.95 : 0.25), hz1 = front - 0.12, hx0 = x + 0.18, hx1 = X1 - (LW >= 4 ? 0.7 : 0.18), wallH = 0.42;
+    // trincheira dos trilhos nos fundos, com um trem parado
+    if (LD >= 4) { const tz0 = z + 0.12, tz1 = hz0 - 0.12; T(x + 0.08, tz0, X1 - 0.08, tz1, 0.004, [0.28, 0.27, 0.27]); for (const tz of [tz0 + 0.15, tz1 - 0.15]) for (const o of [-0.045, 0.045]) T(x + 0.1, tz + o - 0.008, X1 - 0.1, tz + o + 0.008, 0.012, [0.6, 0.6, 0.62]); solidBox(tb, x + 0.08, 0, tz0 - 0.03, X1 - 0.08, 0.06, tz0, ST); solidBox(tb, x + 0.08, 0, tz1, X1 - 0.08, 0.06, tz1 + 0.03, ST);
+      const ty = tz0 + 0.15, cars = Math.max(2, Math.floor((LW - 0.6) / 0.95)); for (let k = 0; k < cars; k++) { const ax = x + 0.3 + k * 0.95; box(tb, ax, 0.02, ty - 0.1, ax + 0.88, 0.24, ty + 0.1, { floors: 1, cell: 'glass', color: [0.9, 0.92, 0.95], roofColor: [0.75, 0.78, 0.82], r }); solidBox(tb, ax, 0.08, ty + 0.1, ax + 0.88, 0.11, ty + 0.104, BL); solidBox(tb, ax, 0.08, ty - 0.104, ax + 0.88, 0.11, ty - 0.1, BL); } }
+    // saguão com abóbada de vidro e costelas de aço
+    box(tb, hx0, 0, hz0, hx1, wallH, hz1, { floors: 1, cell: 'glass', color: GL, roofColor: ST, r, top: false });
+    vault(tb, hx0, hx1, hz0, hz1, wallH, Math.min(0.55, (hz1 - hz0) * 0.42), [0.55, 0.72, 0.86], ST);
+    solidBox(tb, hx0 - 0.02, wallH - 0.03, hz0 - 0.02, hx1 + 0.02, wallH + 0.02, hz1 + 0.02, ST);
+    for (let k = 0, m = Math.max(2, Math.round((hx1 - hx0) / 0.9)); k < m; k++) { const dx = lerp(hx0 + 0.35, hx1 - 0.35, m > 1 ? k / (m - 1) : 0.5); faceZ(tb, dx - 0.13, dx + 0.13, 0, 0.3, hz1 + 0.004, 'glassdoor', [1, 1, 1]); solidBox(tb, dx - 0.2, 0.3, hz1, dx + 0.2, 0.33, hz1 + 0.2, ST); }
+    // torre do relógio com o "M" do metrô
+    { const tx0 = X1 - (LW >= 4 ? 0.58 : 0.42), tx1 = tx0 + 0.32, tz0 = front - 0.42, tz1 = front - 0.1, th = 1.25 + 0.1 * Math.min(4, n);
+      box(tb, tx0, 0, tz0, tx1, th, tz1, { floors: Math.round(th / fh), cell: 'brick', color: [0.66, 0.36, 0.28], roofColor: [0.5, 0.5, 0.52], r, top: false }); hipRoof(tb, tx0 - 0.02, tx1 + 0.02, tz0 - 0.02, tz1 + 0.02, th, 0.22, [0.3, 0.4, 0.5], 0);
+      cylinder(tb, (tx0 + tx1) / 2, tz1 + 0.002, 0.11, th - 0.34, th - 0.33, 14, [0.95, 0.95, 0.92]);
+      tb.quadOut([(tx0 + tx1) / 2 - 0.11, th - 0.45, tz1 + 0.01], [(tx0 + tx1) / 2 + 0.11, th - 0.45, tz1 + 0.01], [(tx0 + tx1) / 2 + 0.11, th - 0.23, tz1 + 0.01], [(tx0 + tx1) / 2 - 0.11, th - 0.23, tz1 + 0.01], [0.96, 0.96, 0.93], 0, 0, 1);
+      const mx = (tx0 + tx1) / 2, my = th - 0.34; solidBox(tb, mx - 0.004, my, tz1 + 0.012, mx + 0.004, my + 0.07, tz1 + 0.016, [0.1, 0.1, 0.12]); solidBox(tb, mx - 0.004, my - 0.004, tz1 + 0.012, mx + 0.05, my + 0.004, tz1 + 0.016, [0.1, 0.1, 0.12]);
+      metroM(tb, mx, 0.62, tz1 + 0.012, 0.16); meta.top = Math.max(meta.top, th + 0.22); }
+    // entradas com o "M" e escadas descendo
+    for (let k = 0, m = Math.min(3, 1 + Math.floor(n / 2)); k < m; k++) { const ex = lerp(x + 0.5, X1 - (LW >= 4 ? 1.0 : 0.6), m > 1 ? k / (m - 1) : 0.3), ez = Z1 - 0.32; T(ex - 0.13, ez - 0.16, ex + 0.13, ez + 0.16, 0.014, [0.18, 0.18, 0.2]); for (const sx of [-0.14, 0.13]) solidBox(tb, ex + sx, 0, ez - 0.16, ex + sx + 0.012, 0.1, ez + 0.16, ST); solidBox(tb, ex + 0.17, 0, ez + 0.14, ex + 0.19, 0.42, ez + 0.16, [0.4, 0.42, 0.46]); metroM(tb, ex + 0.18, 0.32, ez + 0.16, 0.12); }
+    for (let k = 0, m = Math.max(2, Math.round(LW / 0.9)); k < m; k++) { const bx = lerp(x + 0.3, X1 - 0.3, k / (m - 1)), bz = front + 0.12; const g = new GeoBuilder(); yardTree(g, bx, bz, r); tb.merge(g, 0, 0, 0, 0.012); }
+    meta.top = Math.max(meta.top, wallH + 0.5);
+  }
+  // placa azul com o "M" branco (face voltada para +z)
+  function metroM(tb, cx, cy, zf, s) {
+    solidBox(tb, cx - s / 2, cy - s / 2, zf, cx + s / 2, cy + s / 2, zf + 0.012, [0.12, 0.35, 0.78]);
+    const W2 = [0.97, 0.97, 0.98], a = s * 0.32, b = s * 0.3, w = s * 0.07, y0 = cy - b, y1 = cy + b, f = zf + 0.014;
+    tb.quadOut([cx - a, y0, f], [cx - a + w, y0, f], [cx - a + w, y1, f], [cx - a, y1, f], W2, 0, 0, 1); tb.quadOut([cx + a - w, y0, f], [cx + a, y0, f], [cx + a, y1, f], [cx + a - w, y1, f], W2, 0, 0, 1);
+    tb.quadOut([cx - a, y1, f], [cx - a + w, y1, f], [cx + w / 2, cy - b * 0.1, f], [cx - w / 2, cy - b * 0.1, f], W2, 0, 0, 1); tb.quadOut([cx + a - w, y1, f], [cx + a, y1, f], [cx + w / 2, cy - b * 0.1, f], [cx - w / 2, cy - b * 0.1, f], W2, 0, 0, 1);
+  }
+  // ----- aterro sanitário grande: morro em degraus, rampa dos caminhões, queimador de gás e lagoa -----
+  function comboLandfill(tb, c) {
+    const { x, z, X1, Z1, LW, LD, n, r, meta } = c, roofC = cellUV('roof'), T = (x0, z0, x1, z1, y, col) => tb.top(x0, z0, x1, z1, y, roofC, col);
+    T(x + 0.02, z + 0.02, X1 - 0.02, Z1 - 0.02, 0.011, [0.55, 0.5, 0.4]);
+    const mx0 = x + 0.25, mx1 = X1 - (LW >= 4 ? 1.0 : 0.3), mz0 = z + 0.25, mz1 = Z1 - 0.55, steps = Math.min(5, 2 + Math.floor(n / 2)), SOIL = [[0.5, 0.42, 0.3], [0.56, 0.47, 0.33], [0.47, 0.4, 0.29]], GR = [0.45, 0.62, 0.34];
+    let y = 0.012; for (let k = 0; k < steps; k++) { const ins = k * Math.min(mx1 - mx0, mz1 - mz0) * 0.11, sh = 0.12; if (mx1 - mx0 - 2 * ins < 0.3 || mz1 - mz0 - 2 * ins < 0.3) break; solidBox(tb, mx0 + ins, y, mz0 + ins, mx1 - ins, y + sh, mz1 - ins, SOIL[k % 3]); T(mx0 + ins + 0.04, mz0 + ins + 0.04, mx1 - ins - 0.04, mz1 - ins - 0.04, y + sh + 0.002, k === steps - 1 ? [0.42, 0.36, 0.27] : GR); y += sh; }
+    meta.top = Math.max(meta.top, y + 0.1);
+    // rampa de acesso e caminhões
+    gStrip(tb, mx0 + 0.1, Z1 - 0.3, mx0 + 0.1, mz1 - 0.2, 0.09, 0.016, [0.38, 0.37, 0.36]);
+    miniTruck(tb, mx0 + 0.11, mz1 - (mz1 - mz0) * 0.2, false, [0.95, 0.75, 0.2], [0.35, 0.55, 0.3]);
+    miniTruck(tb, (mx0 + mx1) / 2, (mz0 + mz1) / 2, true, [0.95, 0.75, 0.2], [0.35, 0.55, 0.3]);
+    { const bx = (mx0 + mx1) / 2 + 0.3, bz = (mz0 + mz1) / 2 - 0.2; solidBox(tb, bx - 0.1, y, bz - 0.06, bx + 0.08, y + 0.08, bz + 0.06, [0.95, 0.75, 0.2]); solidBox(tb, bx + 0.08, y + 0.02, bz - 0.07, bx + 0.12, y + 0.06, bz + 0.07, [0.5, 0.5, 0.52]); }   // trator
+    // queimador de gás (biogás) com chama e fumaça leve
+    { const fx = mx1 - 0.25, fz = mz0 + 0.3; cylinder(tb, fx, fz, 0.025, y, y + 0.55, 6, [0.6, 0.6, 0.62]); solidBox(tb, fx - 0.03, y + 0.55, fz - 0.03, fx + 0.03, y + 0.62, fz + 0.03, [1.0, 0.55, 0.15]); const [ex, ez] = rotPt(fx, fz, c.cx, c.cz, c.rot); meta.emit.push({ x: ex, y: y + 0.65, z: ez, rate: 0.35 }); }
+    // lagoa de chorume e estação de pesagem com cancela
+    if (LW >= 4) { const px = X1 - 0.5, pz = z + 0.75; gDisc(tb, px, pz, 0.36, 0.5, 0.014, [0.36, 0.42, 0.3], 16); gRing(tb, px, pz, 0.36, 0.5, 0.04, 0.018, [0.62, 0.6, 0.55], 18); }
+    { const gx = x + 0.55, gz = Z1 - 0.32; box(tb, gx - 0.2, 0, gz - 0.14, gx + 0.1, 0.22, gz + 0.06, { floors: 1, cell: 'window', color: [0.86, 0.84, 0.78], roofColor: [0.4, 0.5, 0.42], r }); T(gx + 0.15, gz - 0.12, gx + 0.55, gz + 0.12, 0.016, [0.42, 0.42, 0.45]); solidBox(tb, gx + 0.6, 0, gz - 0.02, gx + 0.62, 0.12, gz, [0.9, 0.2, 0.2]); solidBox(tb, gx + 0.62, 0.1, gz - 0.015, gx + 0.95, 0.115, gz - 0.005, [0.95, 0.95, 0.95]); }
+    for (const [ax, az, bx, bz] of [[x + 0.04, z + 0.04, X1 - 0.04, z + 0.04], [x + 0.04, z + 0.04, x + 0.04, Z1 - 0.04], [X1 - 0.04, z + 0.04, X1 - 0.04, Z1 - 0.04]]) fenceRun(tb, ax, az, bx, bz, [0.6, 0.62, 0.6], 0.12);
+  }
+  // ----- central de reciclagem: galpão de triagem com sheds, esteira, fardos coloridos e contêineres -----
+  function comboRecycling(tb, c) {
+    const { x, z, X1, Z1, LW, LD, n, r, fh, meta } = c, roofC = cellUV('roof'), T = (x0, z0, x1, z1, y, col) => tb.top(x0, z0, x1, z1, y, roofC, col), GRN = [0.2, 0.6, 0.35];
+    T(x + 0.02, z + 0.02, X1 - 0.02, Z1 - 0.02, 0.011, [0.6, 0.6, 0.6]);
+    const hx0 = x + 0.12, hx1 = X1 - (LW >= 4 ? 1.3 : 0.12), hz0 = z + 0.12, hz1 = Math.min(Z1 - 0.7, z + LD * 0.62), h = fh * 2.3, wall = [0.86, 0.92, 0.86];
+    box(tb, hx0, 0, hz0, hx1, h, hz1, { floors: 2, cell: 'factory', color: wall, roofColor: GRN, r, top: false });
+    { const nS = Math.max(3, Math.round((hz1 - hz0) / 0.24)), dz = (hz1 - hz0) / nS, th = 0.12, pc = cellUV('plain'), GL = [0.55, 0.75, 0.88]; for (let k = 0; k < nS; k++) { const za = hz0 + k * dz, zb = za + dz; tb.quad([hx0, h + th, za], [hx1, h + th, za], [hx1, h, za], [hx0, h, za], pc, GL); tb.quad([hx0, h, za], [hx1, h, za], [hx1, h + th, za], [hx0, h + th, za], pc, GL); tb.quad([hx0, h + th, za], [hx0, h, zb], [hx1, h, zb], [hx1, h + th, za], pc, mul(GRN, 1.1)); tb.quad([hx1, h + th, za], [hx1, h, zb], [hx0, h, zb], [hx0, h + th, za], pc, mul(GRN, 1.1)); tb.triOut([hx0, h, za], [hx0, h + th, za], [hx0, h, zb], wall, -1, 0, 0); tb.triOut([hx1, h, za], [hx1, h + th, za], [hx1, h, zb], wall, 1, 0, 0); } meta.top = Math.max(meta.top, h + th); }
+    for (let k = 0, m = Math.max(2, Math.round((hx1 - hx0) / 0.55)); k < m; k++) { const dx = lerp(hx0 + 0.25, hx1 - 0.25, m > 1 ? k / (m - 1) : 0.5); faceZ(tb, dx - 0.13, dx + 0.13, 0, 0.26, hz1 + 0.004, 'garage', [0.85, 0.9, 0.85]); }
+    solidBox(tb, hx0 + 0.1, h - 0.17, hz1, hx0 + 0.62, h - 0.03, hz1 + 0.02, GRN); for (let k = 0; k < 3; k++) { const a = k / 3 * Math.PI * 2 + 0.5, px = hx0 + 0.36 + Math.cos(a) * 0.035, py = h - 0.1 + Math.sin(a) * 0.035; solidBox(tb, px - 0.016, py - 0.016, hz1 + 0.02, px + 0.016, py + 0.016, hz1 + 0.026, [0.95, 0.97, 0.95]); }
+    // esteira subindo até a moega
+    if (LW >= 4) { const sx = X1 - 0.6, sz = z + 0.5, sy = 0.95; cylinder(tb, sx, sz, 0.22, 0, sy, 12, [0.75, 0.8, 0.78], [0.6, 0.65, 0.62]); frustum(tb, sx, sz, 0.22, 0.05, sy, sy + 0.18, 12, [0.6, 0.65, 0.62]); tb.quadOut([hx1, h * 0.7, sz - 0.04], [hx1, h * 0.7, sz + 0.04], [sx - 0.18, sy + 0.05, sz + 0.04], [sx - 0.18, sy + 0.05, sz - 0.04], [0.3, 0.3, 0.32], 0, 1, 0); for (let k = 1; k < 4; k++) { const t = k / 4, px = lerp(hx1, sx - 0.18, t), py = lerp(h * 0.7, sy + 0.05, t); solidBox(tb, px - 0.012, 0, sz - 0.012, px + 0.012, py, sz + 0.012, [0.5, 0.52, 0.55]); } meta.top = Math.max(meta.top, sy + 0.2); }
+    // fardos prensados e contêineres coloridos no pátio
+    const BALE = [[0.3, 0.5, 0.85], [0.9, 0.85, 0.75], [0.85, 0.3, 0.3], [0.55, 0.57, 0.6], [0.95, 0.8, 0.25], [0.35, 0.7, 0.4]];
+    const yz0 = hz1 + 0.12, yz1 = Z1 - 0.12; let k2 = 0;
+    for (let bx = x + 0.2; bx + 0.12 < (LW >= 4 ? X1 - 1.3 : X1 - 0.15); bx += 0.17) { const col = BALE[k2++ % 6], st = 1 + ((k2 * 7) % 3); for (let s = 0; s < st; s++) solidBox(tb, bx, s * 0.075, yz1 - 0.2, bx + 0.13, (s + 1) * 0.075 - 0.004, yz1 - 0.08, col); }
+    const CT = [[0.2, 0.45, 0.85], [0.2, 0.62, 0.35], [0.95, 0.78, 0.2], [0.85, 0.25, 0.25]]; for (let q = 0, m = Math.max(4, Math.round((LW - 0.6) / 0.3)); q < m && yz1 - yz0 > 0.45; q++) { const bx = x + 0.25 + q * 0.3; if (bx + 0.22 > X1 - 0.15) break; solidBox(tb, bx, 0, yz0, bx + 0.22, 0.13, yz0 + 0.16, CT[q % 4]); solidBox(tb, bx - 0.005, 0.13, yz0 - 0.005, bx + 0.225, 0.145, yz0 + 0.165, mul(CT[q % 4], 0.8)); }
+    if (LW >= 4) { miniTruck(tb, X1 - 0.75, Z1 - 0.3, true, [0.2, 0.6, 0.35], [0.85, 0.88, 0.85]); box(tb, X1 - 1.15, 0, Z1 - 0.62, X1 - 0.15, fh * 1.6, Z1 - 0.45, { floors: 2, cell: 'window', color: [0.92, 0.95, 0.92], roofColor: GRN, r }); }
+  }
+  // ----- termelétrica grande: casa de máquinas, caldeira, chaminés listradas, torres de resfriamento e pátio de carvão -----
+  function comboCoal(tb, c) {
+    const { x, z, X1, Z1, LW, LD, n, r, meta } = c, roofC = cellUV('roof'), T = (x0, z0, x1, z1, y, col) => tb.top(x0, z0, x1, z1, y, roofC, col), WALL = [0.55, 0.58, 0.62];
+    T(x + 0.02, z + 0.02, X1 - 0.02, Z1 - 0.02, 0.011, [0.45, 0.45, 0.46]);
+    const tw = LW >= 4 ? 1.7 : 1.0, hx0 = x + 0.15, hx1 = X1 - 0.15 - (LW >= 4 ? tw : 0), hz1 = Z1 - 0.2, hz0 = Math.max(z + 0.6, hz1 - 0.9);
+    box(tb, hx0, 0, hz0, hx1, 0.75, hz1, { floors: 2, cell: 'factory', color: WALL, roofColor: [0.42, 0.43, 0.46], r });
+    const bx0 = hx0 + 0.1, bx1 = Math.min(hx1 - 0.1, bx0 + 1.4), bz0 = Math.max(z + 0.15, hz0 - 1.3), bz1 = hz0;
+    box(tb, bx0, 0, bz0, bx1, 1.35, bz1, { floors: 3, cell: 'metal', color: [0.62, 0.6, 0.58], roofColor: [0.4, 0.4, 0.42], r });
+    // chaminés listradas (fumaça) — uma por par de módulos, até 3
+    const nc = Math.min(3, 1 + Math.floor(n / 2)), ch = 2.5 + 0.15 * nc;
+    for (let k = 0; k < nc; k++) { const sx = lerp(bx0 + 0.25, bx1 - 0.25, nc > 1 ? k / (nc - 1) : 0.5), sz = bz0 + 0.3; for (let s = 0, segs = 6; s < segs; s++) cylinder(tb, sx, sz, 0.13 - s * 0.008, 1.35 + s * (ch - 1.35) / segs, 1.35 + (s + 1) * (ch - 1.35) / segs, 10, s >= segs - 2 ? (s % 2 ? [0.95, 0.95, 0.95] : [0.85, 0.2, 0.2]) : [0.62, 0.62, 0.64], [0.2, 0.2, 0.22]); const [ex, ez] = rotPt(sx, sz, c.cx, c.cz, c.rot); meta.emit.push({ x: ex, y: ch + 0.05, z: ez, rate: 1.3 }); }
+    meta.top = Math.max(meta.top, ch + 0.1);
+    // torres de resfriamento (hiperboloides) soltando vapor
+    if (LW >= 4) { const nt = LD >= 4 ? 2 : 1; for (let k = 0; k < nt; k++) { const tx = X1 - tw / 2 - 0.1, tz = nt > 1 ? lerp(z + 0.95, Z1 - 0.95, k) : (z + Z1) / 2, CT = [0.86, 0.85, 0.82];
+      tube(tb, tx, tz, 0.72, 0.5, 0, 0.7, 18, CT); tube(tb, tx, tz, 0.5, 0.46, 0.7, 1.05, 18, CT); tube(tb, tx, tz, 0.46, 0.53, 1.05, 1.35, 18, CT); gDisc(tb, tx, tz, 0.52, 0.52, 1.33, [0.28, 0.28, 0.3], 18); for (let a = 0; a < 6; a++) { const aa = a / 6 * Math.PI * 2; solidBox(tb, tx + Math.cos(aa) * 0.7 - 0.03, 0, tz + Math.sin(aa) * 0.7 - 0.03, tx + Math.cos(aa) * 0.7 + 0.03, 0.08, tz + Math.sin(aa) * 0.7 + 0.03, [0.5, 0.5, 0.52]); }
+      const [ex, ez] = rotPt(tx, tz, c.cx, c.cz, c.rot); meta.emit.push({ x: ex, y: 1.45, z: ez, rate: 0.9, steam: true }); } meta.top = Math.max(meta.top, 1.4); }
+    // pátio de carvão com esteira até a caldeira
+    if (bx1 + 0.4 < hx1 || LW < 4) { const px0 = Math.min(bx1 + 0.15, hx1 - 0.6), cxp = (px0 + hx1) / 2, czp = bz0 + 0.3; hipRoof(tb, px0, hx1, bz0 + 0.05, Math.min(bz1 - 0.05, bz0 + 0.55), 0.01, 0.22, [0.12, 0.12, 0.13], 0); tb.quadOut([cxp - 0.04, 0.2, czp], [cxp + 0.04, 0.2, czp], [bx1, 1.0, czp], [bx1, 1.0, czp], [0.35, 0.35, 0.37], 0, 1, 0); }
+    // subestação: transformadores e torres
+    for (let k = 0; k < 3; k++) { const tx = hx0 + 0.2 + k * 0.28, tz = Z1 - 0.12; solidBox(tb, tx - 0.08, 0, tz - 0.06, tx + 0.08, 0.12, tz + 0.04, [0.45, 0.5, 0.45]); }
+  }
+  // ----- parque eólico: subestação, caminhos de cascalho entre as torres (as torres são animadas à parte) -----
+  function comboWind(tb, c) {
+    const { x, z, X1, Z1, LW, LD, r, meta } = c, roofC = cellUV('roof'), GRAV = [0.6, 0.56, 0.48];
+    for (let tz = 0; tz < LD; tz++) for (let tx = 0; tx < LW; tx++) { const px = x + tx + 0.5, pz = z + tz + 0.5; cylinder(tb, px, pz, 0.2, 0, 0.05, 10, [0.72, 0.72, 0.7], [0.78, 0.78, 0.76]); if (tx + 1 < LW) gStrip(tb, px + 0.2, pz, px + 0.8, pz, 0.07, 0.014, GRAV); if (tz + 1 < LD) gStrip(tb, px, pz + 0.2, px, pz + 0.8, 0.07, 0.014, GRAV); }
+    const sx = x + 0.5, sz = Z1 - 0.18; tb.top(sx - 0.2, sz - 0.14, sx + 0.25, sz + 0.12, 0.013, roofC, [0.55, 0.55, 0.56]);
+    box(tb, sx - 0.18, 0, sz - 0.12, sx - 0.02, 0.16, sz + 0.02, { floors: 1, cell: 'plain', color: [0.88, 0.88, 0.86], roofColor: [0.55, 0.6, 0.66], r }); for (const ox of [0.06, 0.16]) { solidBox(tb, sx + ox - 0.035, 0, sz - 0.1, sx + ox + 0.035, 0.1, sz - 0.02, [0.45, 0.5, 0.45]); solidBox(tb, sx + ox - 0.008, 0.1, sz - 0.07, sx + ox + 0.008, 0.2, sz - 0.05, [0.85, 0.85, 0.85]); }
+    meta.top = Math.max(meta.top, 0.3);
   }
   function genService(gb, b, st, city) {
     { const g = comboOf(b); b._combo = g ? g.sig : ''; if (g) { if (g.leader !== b) return { top: 0.4, emit: [] }; return genCombo(gb, b, g, st); } }
@@ -4752,12 +5031,22 @@ const R3 = (function () {
     const alive = new Set();
     for (const b of city.buildings) {
       if ((b.kind !== 'amusement' && b.kind !== 'lighthouse') || b.cons > 0) continue;
-      alive.add(b.id); if (rides.has(b.id)) continue;
-      const S = b.size, cx = b.x - HW + S / 2, cz = b.z - HH + S / 2, base = b.h * TH, rot = bRot(b), list = [];
-      if (b.kind === 'amusement') {
-        const w = makeWheel(), p = rotPt(cx - 0.55, cz - 0.55, cx, cz, rot); w.position.set(p[0], base + 1.02, p[1]); w.rotation.y = rot * Math.PI / 2; scene.add(w); list.push({ type: 'wheel', obj: w });
-        const c = makeCarousel(), q = rotPt(cx + 0.7, cz + 0.7, cx, cz, rot); c.position.set(q[0], base + 0.05, q[1]); scene.add(c); list.push({ type: 'carousel', obj: c });
-      } else { const bm = makeBeam(); bm.position.set(cx, base + 1.175, cz); scene.add(bm); list.push({ type: 'beam', obj: bm }); }
+      const g = b.kind === 'amusement' ? comboOf(b) : null; if (g && g.leader !== b) continue;    // no parque ampliado, os brinquedos ficam com o líder
+      const sig = g ? g.sig : ''; alive.add(b.id);
+      const cur = rides.get(b.id); if (cur && cur.sig === sig) continue;
+      if (cur) for (const it of cur) scene.remove(it.obj);
+      const S = b.size, base = b.h * TH, list = []; list.sig = sig;
+      const put = (type, obj, lx, lz, y, cx, cz, rot, sc) => { const p = rotPt(lx, lz, cx, cz, rot); obj.position.set(p[0], base + y, p[1]); obj.rotation.y = rot * Math.PI / 2; if (sc) obj.scale.setScalar(sc); scene.add(obj); list.push({ type, obj }); };
+      if (g) {
+        const fake = Object.assign({}, b, { w: g.w, d: g.d }), rot = bRot(fake), LW = rot % 2 ? g.d : g.w, LD = rot % 2 ? g.w : g.d, cx = b.x - HW + g.w / 2, cz = b.z - HH + g.d / 2, x = cx - LW / 2, z = cz - LD / 2, lay = amuseLayout(LW, LD);
+        put('wheel', makeWheel(), x + lay.wheel[0], z + lay.wheel[1], 1.02 * lay.wheel[2], cx, cz, rot, lay.wheel[2]);
+        for (const [px, pz] of lay.car) put('carousel', makeCarousel(), x + px, z + pz, 0.05, cx, cz, rot);
+        for (const [px, pz] of lay.swing) put('swing', makeSwing(), x + px, z + pz, 0, cx, cz, rot);
+        for (const [px, pz] of lay.drop) put('drop', makeDrop(), x + px, z + pz, 0.2, cx, cz, rot);
+      } else if (b.kind === 'amusement') {
+        const cx = b.x - HW + S / 2, cz = b.z - HH + S / 2, rot = bRot(b);
+        put('wheel', makeWheel(), cx - 0.55, cz - 0.55, 1.02, cx, cz, rot); put('carousel', makeCarousel(), cx + 0.7, cz + 0.7, 0.05, cx, cz, rot);
+      } else { const bm = makeBeam(); bm.position.set(b.x - HW + S / 2, base + 1.175, b.z - HH + S / 2); scene.add(bm); list.push({ type: 'beam', obj: bm }); }
       rides.set(b.id, list);
     }
     for (const [id, list] of rides) if (!alive.has(id)) { for (const it of list) scene.remove(it.obj); rides.delete(id); }
@@ -4810,6 +5099,8 @@ const R3 = (function () {
     // atrações animadas
     for (const [, list] of rides) for (const it of list) {
       if (it.type === 'wheel') { it.obj.rotation.z += dt * 0.22; for (const c of it.obj.userData.cabins) c.rotation.z = -it.obj.rotation.z; for (const m of it.obj.userData.mats) m.emissiveIntensity = nightK * 0.8; }
+      else if (it.type === 'swing') { const u = it.obj.userData; u.top.rotation.y += dt * 1.6; for (const m of u.mats) m.emissiveIntensity = nightK * 0.9; }
+      else if (it.type === 'drop') { const u = it.obj.userData, ph = (now * 0.11 + u.ph) % 1, yy = ph < 0.55 ? lerp(0, 1.75, ph / 0.55) : ph < 0.7 ? 1.75 : ph < 0.76 ? lerp(1.75, 0, ((ph - 0.7) / 0.06) ** 2) : 0; u.ring.position.y = yy; for (const m of u.mats) m.emissiveIntensity = nightK * 0.9; }
       else if (it.type === 'carousel') { it.obj.rotation.y += dt * 0.9; it.obj.userData.horses.forEach((h, k) => { h.position.y = Math.sin(now * 3 + k * 1.3) * 0.03; }); for (const m of it.obj.userData.mats) m.emissiveIntensity = nightK * 0.9; }
       else { it.obj.rotation.y += dt * 0.8; it.obj.userData.mat.opacity = nightK * 0.26; it.obj.visible = nightK > 0.05; }
     }
@@ -4862,8 +5153,9 @@ const R3 = (function () {
     for (const b of city.buildings) {
       if (b.kind !== 'wind') continue;
       alive.add(b.id);
-      if (turbines.has(b.id)) continue;
-      const g = new THREE.Group();
+      const grp = comboOf(b), tsc = grp ? 1 + 0.02 * Math.min(6, grp.n - 1) : 1;      // parque eólico: torres maiores
+      if (turbines.has(b.id)) { const g0 = turbines.get(b.id); if (Math.abs(g0.scale.x - tsc) > 1e-3) g0.scale.setScalar(tsc); continue; }
+      const g = new THREE.Group(); g.scale.setScalar(tsc);
       const white = new THREE.MeshLambertMaterial({ color: 0xf2f2f0 });
       const pole = new THREE.Mesh(turbineGeo.pole, white); pole.position.y = 0.8; pole.castShadow = true; g.add(pole);
       const nac = new THREE.Mesh(turbineGeo.nacelle, white); nac.position.set(0, 1.62, 0); nac.castShadow = true; g.add(nac);
@@ -5523,7 +5815,7 @@ const R3 = (function () {
   function driverOut(a) {
     if (a.px === undefined || peds.length >= 270) return; const cd = carDoor(a), d = nearDoor(a, cd); if (!d) return;
     const tile = tileIndexAt(a.px, a.pz), y0 = (a.py || d.y) + 0.045;
-    if (d.same && d.dist < 1.15) { const w = pedLine(cd.x, cd.z, y0, d.x + (d.ix || 0), d.z + (d.iz || 0), d.y, tile); if (w && a.cit) w.cit = a.cit; return; }
+    if (d.same && d.dist < 1.15) { const w = pedLine(cd.x, cd.z, y0, d.x + (d.ix || 0), d.z + (d.iz || 0), d.y, tile); if (w && d.db) { w.mv.od = d.db; w.mv.ok = Math.max(0, 1 - 0.3 / (d.dist || 1)); } if (w && a.cit) w.cit = a.cit; return; }
     const r = roadIdxOf(d.b), pth = r >= 0 && tile >= 0 ? bfsPath(tile, r) : null; if (!pth || pth.length < 2 || pth.length > 14) return;
     const c = newPed(pth, 'visit', null, d.b, Math.random); c.sg = sideOf(pth[0], pth[1], pth[0], cd) || 1; planCross(c);
     const s0 = agentPose(c, pside(c), 0, false); if (!s0 || s0 === 'end') return;
@@ -5540,7 +5832,7 @@ const R3 = (function () {
   function callTrip(a, dest, destB) {
     if (a.state === 'garage') { if (!startGarage(a, dest, destB)) a.pend = { r: dest, b: destB, t: 0 }; return; }
     const cd = carDoor(a), d = a.px !== undefined ? nearDoor(a, cd) : null;
-    if (d && d.same && d.dist < 1.15) { const c = pedLine(d.x + (d.ix || 0), d.z + (d.iz || 0), d.y, cd.x, cd.z, (a.py || d.y) + 0.045, tileIndexAt(a.px, a.pz)); if (c) { if (a.cit) c.cit = a.cit; a.pend = { r: dest, b: destB }; a.boardT = d.dist / c.speed + 0.25; return; } }
+    if (d && d.same && d.dist < 1.15) { const c = pedLine(d.x + (d.ix || 0), d.z + (d.iz || 0), d.y, cd.x, cd.z, (a.py || d.y) + 0.045, tileIndexAt(a.px, a.pz)); if (c) { if (d.db) openDoor(d.db); if (a.cit) c.cit = a.cit; a.pend = { r: dest, b: destB }; a.boardT = d.dist / c.speed + 0.25; return; } }
     // carro mais longe: o dono vem pela calçada até a quadra do carro
     if (d && a.px !== undefined && peds.length < 280) { const r0 = roadIdxOf(d.b), tl = tileIndexAt(a.px, a.pz), pth = r0 >= 0 && tl >= 0 && r0 !== tl ? bfsPath(r0, tl) : null; if (pth && pth.length > 1 && pth.length <= 7) { const c = newPed(pth, 'visit', d.b, null, Math.random); if (a.cit) c.cit = a.cit; peds.push(c); a.pend = { r: dest, b: destB }; a.boardT = pth.length / c.speed + 2; return; } }
     if (startTrip(a, dest, false)) a.destB = destB;
@@ -5843,7 +6135,7 @@ const R3 = (function () {
     headMesh.count = tailMesh.count = nh; headMesh.instanceMatrix.needsUpdate = true; tailMesh.instanceMatrix.needsUpdate = true; if (tailMesh.instanceColor) tailMesh.instanceColor.needsUpdate = true;
     blinkMesh.count = nbk; blinkMesh.instanceMatrix.needsUpdate = true;
     lightsMesh.count = nl; lightsMesh.instanceMatrix.needsUpdate = true; if (lightsMesh.instanceColor) lightsMesh.instanceColor.needsUpdate = true;
-    updatePeds(dt, now); updateHubs(dt, now); updateAmbient(dt, now);
+    updatePeds(dt, now); updateDoors(dt); updateHubs(dt, now); updateAmbient(dt, now);
   }
 
   // pessoas: casa → trabalho, trabalho → casa, casa → parque (ficam um tempo) → casa, casa → compras
@@ -5858,6 +6150,7 @@ const R3 = (function () {
   }
   function gateOf(b, px, pz) {
     const d = doorOf(b), s0 = b.size || 1, sw = b.w || s0, sd = b.d || s0; if (isDeco(b)) return d;
+    { const m = bmeta.get(b.id); if (m && m.door) { const D = m.door; return { x: D.x, z: D.z, y: d.y, ix: -D.fx * 0.05, iz: -D.fz * 0.05, db: b }; } }   // a porta de verdade do prédio
     const f = FRONT[decoRot(b)]; d.ix = -f[0] * 0.17; d.iz = -f[1] * 0.17;     // um passo para dentro: some atrás da porta
     if ((sw < 2 && sd < 2) || (px - d.x) * f[0] + (pz - d.z) * f[1] > 0.05) return d;
     const x0 = b.x - HW, z0 = b.z - HH; return { x: clamp(px, x0 + 0.05, x0 + sw - 0.05), z: clamp(pz, z0 + 0.05, z0 + sd - 0.05), y: d.y };
@@ -5897,7 +6190,7 @@ const R3 = (function () {
     if (path.length > 1 && path[0] !== path[1]) c.sg = (from ? sideOf(path[0], path[1], path[0], doorOf(from)) : 0) || (Math.random() < 0.5 ? 1 : -1);
     planCross(c);
     // sai pela porta do prédio de origem e caminha até a calçada
-    if (from) { const s0 = agentPose(c, pside(c), 0, false), d = s0 && s0 !== 'end' ? gateOf(from, s0.x, s0.z) : null; if (d) { c.mv = { x0: d.x + (d.ix || 0), z0: d.z + (d.iz || 0), y0: d.y, x1: s0.x, z1: s0.z, y1: s0.y + 0.045, k: 0, then: 'walk' }; c.state = 'move'; } }
+    if (from) { const s0 = agentPose(c, pside(c), 0, false), d = s0 && s0 !== 'end' ? gateOf(from, s0.x, s0.z) : null; if (d) { c.mv = { x0: d.x + (d.ix || 0), z0: d.z + (d.iz || 0), y0: d.y, x1: s0.x, z1: s0.z, y1: s0.y + 0.045, k: 0, then: 'walk' }; c.state = 'move'; openDoor(from); } }
     return c;
   }
   function spawnPed(L) {
@@ -5920,7 +6213,7 @@ const R3 = (function () {
     else if (purpose === 'visit') { path = bfsTo(r.r, i => L.resTile[i], 1500); if (path) to = atTile(L.res, end()); }
     else { // volta para casa: sai do trabalho, da escola ou das compras
       const src = L.jobs.length && Math.random() < 0.65 ? rnd(L.jobs) : L.shops.length ? rnd(L.shops) : null;
-      if (src) { path = bfsTo(src.r, i => L.resTile[i], 4000); if (path) { from = src.b; to = atTile(L.res, end()); } }
+      if (src) { let d = null; for (let k = 0; k < 4 && !path; k++) { d = rnd(L.res); const p2 = d && d.r !== src.r ? bfsPath(src.r, d.r) : null; if (p2 && p2.length >= 6 && p2.length <= 42) path = p2; } if (path) { from = src.b; to = d.b; } else { path = bfsTo(src.r, i => L.resTile[i], 4000); if (path) { from = src.b; to = atTile(L.res, end()); } } }
     }
     if (!path || path.length < 2) return;
     const c = pedGo(L, from, to, path, purpose, r);
@@ -6096,7 +6389,12 @@ const R3 = (function () {
       // dia de jogo: a torcida vai chegando antes do apito e sai depois do fim
       for (const st of L.stadiums) { const g = matches.get(st.b.id); if (matchSoon() && tick()) back(st.b, L.res); if (g && g.exit > 0 && tick()) { g.exit--; const r0 = st.r, d = rnd(L.res), p = bfsPath(r0, d.r); if (p && p.length > 1 && p.length < 40) pedGo(L, st.b, d.b, p, 'home', d); } }
     }
-    if (peds.length > target + 8) { const k = peds.findIndex(c => !c.cit && !c.tourist); if (k >= 0) peds.splice(k, 1); }
+    if (peds.length > target + 8) {      // gente demais: tira quem está longe da câmera (ninguém some na frente de quem está olhando)
+      const vr = (cam.dist || 20) * 0.9 + 3; let k = -1, bd = vr;
+      for (let q = 0; q < peds.length; q++) { const c = peds[q]; if (c.cit || c.tourist || c.state !== 'walk' || c.px === undefined) continue; const d = Math.hypot(c.px - cam.tx, c.pz - cam.tz); if (d > bd) { bd = d; k = q; } }
+      if (k < 0 && peds.length > target + 60) k = peds.findIndex(c => !c.cit && !c.tourist && c.state === 'walk');
+      if (k >= 0) peds.splice(k, 1);
+    }
     let m = 0; const opt = { extra: 0, skirt: 0, hat: 0, longHair: 0, dog: 0 };
     const PM = pedMesh;
     let nu = 0; const rainy = weather.rain > 0.25;
@@ -6153,6 +6451,7 @@ const R3 = (function () {
       if (c.state === 'move') {
         // trecho reto: da porta até a calçada, ou da calçada até a porta do destino
         const v = c.mv, d = Math.hypot(v.x1 - v.x0, v.z1 - v.z0) || 0.001; v.k += dt * c.speed / d;
+        if (v.od && !v.opened && v.k >= (v.ok || 0)) { openDoor(v.od); v.opened = true; }
         const e = Math.min(1, v.k);
         p = { x: lerp(v.x0, v.x1, e), y: lerp(v.y0, v.y1, e), z: lerp(v.z0, v.z1, e), rot: Math.atan2(v.x1 - v.x0, v.z1 - v.z0) }; pose.walk = dt > 0;
         if (v.k >= 1) { if (v.then === 'walk') c.state = 'walk'; else if (v.then === 'gone' && c.ride && c.ride.mode === 'metro') { c.state = 'ride'; c.hidden = true; c.mv = null; c.rideT = 2.5 + (Math.abs((c.ride.stA.x - c.ride.stB.x)) + Math.abs(c.ride.stA.z - c.ride.stB.z)) / 7; continue; } else if (v.then === 'waitbus') { c.state = 'waitbus'; c.waitT = 0; c.prot = v.face; } else if (v.then === 'act') { c.state = 'act'; c.lx = v.x1; c.lz = v.z1; c.act = pickActivity(c, c.to); } else { if (c.cit && c.cit.ent === c) citArrive(c.cit, c.to); peds.splice(k, 1); continue; } c.mv = null; }
@@ -6194,7 +6493,7 @@ const R3 = (function () {
           const tx = park ? to.x - HW + 0.5 : d.x + (d.ix || 0), tz = park ? to.z - HH + 0.5 : d.z + (d.iz || 0);
           // nos parques entra pela borda mais próxima; nos prédios vai até a porta
           const ex = park ? clamp(c.px, to.x - HW + 0.1, to.x - HW + 0.9) : tx, ez = park ? clamp(c.pz, to.z - HH + 0.1, to.z - HH + 0.9) : tz;
-          c.mv = { x0: c.px, z0: c.pz, y0: c.py, x1: ex, z1: ez, y1: d.y, k: 0, then: park ? 'act' : 'gone' }; c.state = 'move'; continue;
+          c.mv = { x0: c.px, z0: c.pz, y0: c.py, x1: ex, z1: ez, y1: d.y, k: 0, then: park ? 'act' : 'gone' }; c.state = 'move'; if (!park && d.db) { c.mv.od = to; c.mv.ok = Math.max(0, 1 - 0.32 / (Math.hypot(ex - c.px, ez - c.pz) || 1)); } continue;
         }
         if (!p) { peds.splice(k, 1); continue; }
         p.y += 0.045; pose.walk = dt > 0 && c.state !== 'wait' && !hold; if (hurry && crossing) pose.run = true;
@@ -6685,6 +6984,9 @@ const R3 = (function () {
     },
     sideSpots: () => { if (!sideCache) buildSide(); const out = []; for (let i = 0; i < N; i++) if (sideCache[i]) out.push([i % W, (i / W) | 0, sideCache[i]]); return out; },
     clusterSpots: () => { isSignal(0); return [...sigClu.values()].filter(c => c.tiles.length > 1).map(c => c.tiles.map(t => [t % W, (t / W) | 0])); },
+    holdDoors: () => { let n = 0; for (const b of city.buildings) { const m = bmeta.get(b.id); if (m && m.door) { doorOpen.set(b.id, { t: 999, a: 1, b }); n++; } } updateDoors(0.016); return n; },
+    pedStep: (dt, n) => { const t0 = performance.now() / 1000; for (let k = 0; k < n; k++) { updatePeds(dt, t0 + k * dt); updateDoors(dt); } return peds.length; },
+    doorStats: () => { let withDoor = 0; for (const [, m] of bmeta) if (m && m.door) withDoor++; return { open: doorOpen.size, withDoor, peds: peds.length, moving: peds.filter(c => c.state === 'move').length, doors: [...doorOpen.values()].slice(0, 6).map(o => { const m = bmeta.get(o.b.id); return [+m.door.x.toFixed(2), +m.door.z.toFixed(2), o.b.kind, +o.a.toFixed(2)]; }) }; },
     pullSpots: () => agents.filter(a => a.pull === 1 && a.state === 'wait' && a.px !== undefined).map(a => [a.px, a.pz, a.rotY, a.type]),
     uturnSpots: () => agents.filter(a => a.px !== undefined && a.seg + 2 < a.path.length && a.path[a.seg + 2] === a.path[a.seg] && a.t > 0.5).map(a => [a.px, a.pz, a.rotY, a.type]),
     poseProbe: (path, side, dt, steps, car) => { const c = { path, seg: 0, t: 0, speed: 1, v: 1, state: 'go' }, out = []; for (let k = 0; k < steps; k++) { const p = agentPose(c, side, dt, car !== false); if (!p || p === 'end') break; out.push([+p.x.toFixed(3), +p.z.toFixed(3), +p.rot.toFixed(3), c.seg, +c.t.toFixed(3), +p.y.toFixed(3)]); } return out; },
@@ -6846,7 +7148,7 @@ const Snd = (function () {
 (function () {
   'use strict';
   const $ = s => document.querySelector(s);
-  const APP_VERSION = {"v":39,"date":"2026-11-17","notes":["Curvas só onde você usa a ferramenta de curva: o resto das ruas volta a ficar reto como antes. Curvas feitas na versão 38 precisam ser redesenhadas.","Ponte em curva: a curva (ou reta inclinada) pode passar por cima da água, com pilares, guarda-corpo e rampa acompanhando.","Zoom afastado sem a névoa vermelha/escura, e o reflexo da lua na água ficou mais suave.","Semáforos colados (dois cruzamentos vizinhos) agora funcionam como um só: quem entrou atravessa tudo, sem travar no meio.","Ruas desenhadas lado a lado viram duas vias separadas, com calçada no meio, em vez de um cruzamento a cada quadra.","Caminhões, vans, viaturas e visitas encostam no meio-fio para parar, e os carros passam ao lado. Na rua estreita, só ultrapassam com a contramão livre.","Retorno no meio da rua só quando não dá para contornar a quadra, e esperando a contramão ficar livre.","Fila de sinal não buzina nem some mais: só conta como travado quem está parado sem motivo."]};
+  const APP_VERSION = {"v":40,"date":"2026-11-17","notes":["Cinema com cara de cinema: fachada colorida, marquise com lâmpadas, cartazes iluminados e o letreiro vertical CINE.","As portas abrem quando alguém entra ou sai dos prédios, e as pessoas saem pela porta de verdade.","Ninguém some mais na frente da câmera; quem sai do trabalho ou das compras volta para uma casa mais longe, e não sempre para a vizinha.","Parque de diversões ampliável: encostando até 4, vira um parque grande com roda-gigante maior, montanha-russa em volta, chapéu mexicano e torre de queda.","Desenho próprio ao juntar: metrô (estação central com abóbada de vidro, trem e torre do relógio), aterro (morro em degraus), reciclagem (galpão de triagem com fardos), termelétrica (torres de resfriamento) e parque eólico.","Limite de parque de diversões, zoológico, museu, porto, aeroporto e outros agora cresce com a população. Ampliar um que já existe não conta como novo."]};
   const VER = (typeof APP_VERSION !== 'undefined' && APP_VERSION) || { v: 0, date: '', notes: [] };
   const verDate = () => { const p = String(VER.date || '').split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : ''; };
   const { City, DEFS, HAND, TERRA, ROADS, ISSUE_TIPS, ZONE_NAMES, LEVEL_NAMES, ZSTAT, MISSIONS, ACHIEVEMENTS, SCENARIOS, T, Z, W, H, PARCEL, PX } = Sim;
@@ -7020,6 +7322,7 @@ const Snd = (function () {
     if (d) {
       let h = `${d.desc} Custo ${fmt(d.cost)}, manutenção ${fmt(d.upkeep)}/mês.`;
       if (d.size > 1) h += ` Ocupa ${d.size}×${d.size} quadras.`;
+      if (d.max) { const c = state.city, mx = c.maxOf(id), have = c.countOf(id); h += ` Limite pela população: ${mx === 1 ? 'um' : mx}${d.per ? ` (mais um a cada ${Math.round(d.per / 1000)} mil habitantes)` : ''}, e a cidade tem ${have}.`; if (Sim.COMBO[id]) h += ' Encostado e alinhado a outro igual, vira um complexo maior (não conta no limite).'; }
       if (d.needRoad) h += ' Precisa ficar ao lado de uma rua.';
       if (d.radius) h += ` Alcance de ${d.radius} quadras (a área aparece colorida no chão).`;
       return h + ' ' + how;
