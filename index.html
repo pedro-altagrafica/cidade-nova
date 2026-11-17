@@ -4048,6 +4048,7 @@ const R3 = (function () {
       if (p.dx) { if ((x0 - p.mx) * (x1 - p.mx) > 0 || x0 === x1) continue; t = (p.mx - x0) / (x1 - x0); }
       else { if ((z0 - p.mz) * (z1 - p.mz) > 0 || z0 === z1) continue; t = (p.mz - z0) / (z1 - z0); }
       const x = x0 + (x1 - x0) * t, z = z0 + (z1 - z0) * t, d = Math.hypot(x - p.mx, z - p.mz);
+      if (d > 0.58) continue;      // só vale se cruzar a própria borda entre as duas quadras
       if (d < bd) { bd = d; const l = Math.hypot(x1 - x0, z1 - z0) || 1; best = { x, z, tx: (x1 - x0) / l, tz: (z1 - z0) / l }; }
     }
     if (!best || bd > 0.75) return null;
@@ -4061,7 +4062,17 @@ const R3 = (function () {
     for (let i0 = 0; i0 < N; i0++) {
       if (seen[i0] || !rd[i0] || !city.curveOf[i0] || !ribEligible(i0)) continue;
       const typ = rd[i0], member = j => j >= 0 && ribEligible(j) && rd[j] === typ;
-      const walk = (from, to) => { const out = []; let p = from, c = to, g = 0; while (member(c) && c !== i0 && g++ < 5000) { out.push(c); const ns = ribNbrs(c), nx = ns[0] === p ? ns[1] : ns[0]; p = c; c = nx; } return { tiles: out, anchor: c, loop: c === i0 }; };
+      // quadra reta solta no meio de duas curvas (traçado feito em partes): entra na curva também, senão vira um degrau
+      const plain = j => j >= 0 && rd[j] === typ && (city.terrain[j] === T.WATER || !rampMaskC(j)) && ribDeg(j) === 2;
+      const step = (p, c) => { const ns = ribNbrs(c); return ns[0] === p ? ns[1] : ns[0]; };
+      const walk = (from, to) => { const out = []; let p = from, c = to, g = 0;
+        while (c !== i0 && g++ < 5000) {
+          if (member(c)) { out.push(c); const nx = step(p, c); p = c; c = nx; continue; }
+          if (!plain(c)) break;
+          const gap = [c]; let pp = p, cc = c, ok = false; for (let q = 0; q < 3; q++) { const nx = step(pp, cc); pp = cc; cc = nx; if (cc === i0) break; if (member(cc)) { ok = true; break; } if (!plain(cc)) break; gap.push(cc); }
+          if (!ok) break; for (const t of gap) out.push(t); p = pp; c = cc;
+        }
+        return { tiles: out, anchor: c, loop: c === i0 }; };
       const ns = ribNbrs(i0), back = walk(i0, ns[0]);
       const fwd = back.loop ? { tiles: [], anchor: -1 } : walk(i0, ns[1]);
       const tiles = back.tiles.slice().reverse().concat([i0], fwd.tiles);
@@ -4083,20 +4094,23 @@ const R3 = (function () {
       if (p.lock) continue;
       // o traçado desenhado manda: ponto e direção exatos onde ele cruza a borda
       const ia = cid(seq[k]), ib = cid(seq[k + 1]), ca = ia ? curveCross(ia, p) : null, cb = ib && ib !== ia ? curveCross(ib, p) : null;
-      let cr = ca && cb ? { x: (ca.x + cb.x) / 2, z: (ca.z + cb.z) / 2, tx: ca.tx + cb.tx, tz: ca.tz + cb.tz } : ca || cb;
+      let cr = ca && cb ? (Math.hypot(ca.x - cb.x, ca.z - cb.z) < 0.15 ? { x: (ca.x + cb.x) / 2, z: (ca.z + cb.z) / 2, tx: ca.tx + cb.tx, tz: ca.tz + cb.tz } : ca) : ca || cb;
       let tx, tz;
       if (cr) { tx = cr.tx; tz = cr.tz; if (p.dx) p.z = cr.z; else p.x = cr.x; }
       else { tx = SX[Math.min(n, k + 1)] - SX[Math.max(0, k - 1)]; tz = SZ[Math.min(n, k + 1)] - SZ[Math.max(0, k - 1)]; }
       const tl = Math.hypot(tx, tz) || 1; tx /= tl; tz /= tl;
-      if (tx * p.dx + tz * p.dz < 0.574) { const px = -p.dz, pz = p.dx, sg = (tx * px + tz * pz) < 0 ? -1 : 1; tx = p.dx * 0.574 + px * 0.819 * sg; tz = p.dz * 0.574 + pz * 0.819 * sg; }
+      if (tx * p.dx + tz * p.dz < 0.34) { const px = -p.dz, pz = p.dx, sg = (tx * px + tz * pz) < 0 ? -1 : 1; tx = p.dx * 0.34 + px * 0.94 * sg; tz = p.dz * 0.34 + pz * 0.94 * sg; }
       p.tx = tx; p.tz = tz;
       if (!cr) { if (p.dx) p.z = SZ[k] + (p.mx - SX[k]) * tz / tx; else p.x = SX[k] + (p.mz - SZ[k]) * tx / tz; }
-      if (p.dx) p.z = clamp(p.z, p.mz - 0.36, p.mz + 0.36); else p.x = clamp(p.x, p.mx - 0.36, p.mx + 0.36);
+      const sl = cr ? 0.5 : 0.36; if (p.dx) p.z = clamp(p.z, p.mz - sl, p.mz + sl); else p.x = clamp(p.x, p.mx - sl, p.mx + sl);
       const s2 = Math.sin(2 * Math.atan2(tz, tx)); p.w = 1 - 0.14 * s2 * s2;
     }
     // altura: em terra é a do terreno; na água o tabuleiro sobe e desce suave ao longo do traçado
     const hc = j => (j < 0 ? 0 : isDeck(j) ? deckC(j) : city.height[j] * TH);
-    const PH = []; for (let k = 0; k <= n; k++) { const a = seq[k], b = seq[k + 1]; if (a >= 0 && b >= 0 && isDeck(a) && isDeck(b)) PH.push([(hc(a) + hc(b)) / 2, hc(b) - hc(a)]); else if (a >= 0 && isDeck(a) && b >= 0) PH.push([city.height[b] * TH, 0]); else if (b >= 0 && isDeck(b) && a >= 0) PH.push([city.height[a] * TH, 0]); else PH.push([hc(b >= 0 ? b : a), 0]); }
+    // distância ao longo do traçado: a altura do tabuleiro segue o comprimento real (pedacinho na quina não dá degrau)
+    const SA = [0]; for (let k = 0; k < n; k++) SA.push(SA[k] + Math.hypot(P[k + 1].x - P[k].x, P[k + 1].z - P[k].z));
+    const midS = j => (SA[j] + SA[j + 1]) / 2;   // meio da quadra T0[j]
+    const PH = []; for (let k = 0; k <= n; k++) { const a = seq[k], b = seq[k + 1]; if (a >= 0 && b >= 0 && isDeck(a) && isDeck(b)) { if (k > 0 && k < n) { const mL = midS(k - 1), mR = midS(k), span = mR - mL; PH.push(span > 0.05 ? [hc(a) + (hc(b) - hc(a)) * clamp((SA[k] - mL) / span, 0, 1), (hc(b) - hc(a)) / Math.max(0.3, span)] : [(hc(a) + hc(b)) / 2, 0]); } else PH.push([(hc(a) + hc(b)) / 2, hc(b) - hc(a)]); } else if (a >= 0 && isDeck(a) && b >= 0) PH.push([city.height[b] * TH, 0]); else if (b >= 0 && isDeck(b) && a >= 0) PH.push([city.height[a] * TH, 0]); else PH.push([hc(b >= 0 ? b : a), 0]); }
     let dist = 0;
     for (let k = 0; k < n; k++) {
       const a = P[k], b = P[k + 1], i = T0[k];
@@ -4112,12 +4126,13 @@ const R3 = (function () {
         pts.push([x, z]); tan.push([tx, tz]); ws.push(a.w + (b.w - a.w) * m / RIB_M);
       }
       tan[0] = [a.tx, a.tz]; tan[RIB_M] = [b.tx, b.tz];
+      if (L < 0.12) { let ux = a.tx + b.tx, uz = a.tz + b.tz; const ul = Math.hypot(ux, uz) || 1; ux /= ul; uz /= ul; for (let m = 0; m <= RIB_M; m++) tan[m] = [ux, uz]; }   // pedacinho na quina: sem torcer
       const deck = isDeck(i);
       // reta, centrada e em terra: fica no desenho de sempre
       if (straight[k] && !deck) { let dev = 0; const cx0 = tcx(i), cz0 = tcz(i); for (const [x, z] of pts) dev = Math.max(dev, P[k].dx ? Math.abs(z - cz0) : Math.abs(x - cx0)); if (dev < 0.012 && Math.abs(a.tx * b.tz - a.tz * b.tx) < 0.02 && Math.abs(a.tx * P[k].dz - a.tz * P[k].dx) < 0.02) { dist += 1; continue; } }
       const phi = t => Math.atan2(t[1], t[0]), dphi = (p, q) => { let d = phi(q) - phi(p); while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; }, mid = RIB_M >> 1;
-      const kap = []; for (let m = 0; m <= RIB_M; m++) { const p0 = tan[Math.max(0, m - 1)], p1 = tan[Math.min(RIB_M, m + 1)], ds = L / RIB_M * (Math.min(RIB_M, m + 1) - Math.max(0, m - 1)); kap.push(dphi(p0, p1) / Math.max(1e-4, ds)); }
-      const e0 = PH[k][0], e1 = PH[k + 1][0], yc = hc(i);
+      const kap = []; for (let m = 0; m <= RIB_M; m++) { const p0 = tan[Math.max(0, m - 1)], p1 = tan[Math.min(RIB_M, m + 1)], ds = L / RIB_M * (Math.min(RIB_M, m + 1) - Math.max(0, m - 1)); kap.push(L < 0.12 ? 0 : dphi(p0, p1) / Math.max(1e-4, ds)); }
+      const e0 = PH[k][0], e1 = PH[k + 1][0], yc = L < 0.12 ? (e0 + e1) / 2 : hc(i);
       ribCache.set(i, { i, typ, deck, prev: seq[k], next: seq[k + 2], pts, tan, w: ws, kap, len: L, dash: dist, y0: city.height[i] * TH, e0, m0: PH[k][1], yc, mc: (e1 - e0) / Math.max(0.2, L), e1, m1: PH[k + 1][1],
         h1: { L: L / 2, dphi: dphi(tan[0], tan[mid]) }, h2: { L: L / 2, dphi: dphi(tan[mid], tan[RIB_M]) } });
       dist += L;
@@ -4163,7 +4178,7 @@ const R3 = (function () {
     const M = RIB_M, av = pc.typ === 2, A = av ? 0.42 : 0.4, S = av ? 0.08 : 0.1, deck = pc.deck;
     const ASP = [0.27, 0.28, 0.31], WALK = [0.6, 0.59, 0.56], CURB = [0.44, 0.44, 0.43], DASH = [0.95, 0.82, 0.35], WHITE = [0.85, 0.85, 0.85], GRASS = [0.33, 0.58, 0.3], CON = [0.7, 0.7, 0.68], CONd = [0.5, 0.5, 0.5];
     const ys = []; for (let k = 0; k <= M; k++) ys.push(ribY(pc, k / M));
-    const at = (k, o, dy) => { const p = pc.pts[k], t = pc.tan[k], w = pc.w[k], kk = pc.kap[k]; let ow = o * w; if (ow * kk > 0.92) ow = 0.92 / kk; return [p[0] - t[1] * ow, ys[k] + dy, p[1] + t[0] * ow]; };
+    const at = (k, o, dy) => { const p = pc.pts[k], t = pc.tan[k], w = pc.w[k], kk = pc.kap[k]; let ow = o * w; if (ow * kk > 0.92) ow = Math.max(0.92 / kk, ow * 0.62); return [p[0] - t[1] * ow, ys[k] + dy, p[1] + t[0] * ow]; };
     const band = (o0, o1, dy, col, nrm) => { for (let k = 0; k < M; k++) gb.quadOut(at(k, o0, dy), at(k + 1, o0, dy), at(k + 1, o1, dy), at(k, o1, dy), col, 0, nrm || 1, 0); };
     const wall = (o, dy0, dy1, col, sg) => { for (let k = 0; k < M; k++) { const t = pc.tan[k], a0 = at(k, o, dy0), a1 = at(k + 1, o, dy0); gb.quadOut(a0, a1, at(k + 1, o, dy1), at(k, o, dy1), col, -t[1] * sg, 0, t[0] * sg); } };
     band(-A, A, 0.02, ASP);
@@ -6990,6 +7005,9 @@ const R3 = (function () {
     pullSpots: () => agents.filter(a => a.pull === 1 && a.state === 'wait' && a.px !== undefined).map(a => [a.px, a.pz, a.rotY, a.type]),
     uturnSpots: () => agents.filter(a => a.px !== undefined && a.seg + 2 < a.path.length && a.path[a.seg + 2] === a.path[a.seg] && a.t > 0.5).map(a => [a.px, a.pz, a.rotY, a.type]),
     poseProbe: (path, side, dt, steps, car) => { const c = { path, seg: 0, t: 0, speed: 1, v: 1, state: 'go' }, out = []; for (let k = 0; k < steps; k++) { const p = agentPose(c, side, dt, car !== false); if (!p || p === 'end') break; out.push([+p.x.toFixed(3), +p.z.toFixed(3), +p.rot.toFixed(3), c.seg, +c.t.toFixed(3), +p.y.toFixed(3)]); } return out; },
+    ribDev: () => { if (!ribCache) buildRibbons(); const out = []; for (const [i, pc] of ribCache) { let dev = 0; const ids = new Set([city.curveOf[i], city.curveOf[pc.prev], city.curveOf[pc.next]].filter(Boolean)); for (const [x, z] of pc.pts) { let m = 9; for (const id of ids) { const S = curveSamples(id); if (S) for (const [sx, sz] of S) m = Math.min(m, Math.hypot(sx - x, sz - z)); } dev = Math.max(dev, m); } if (dev > 0.06) out.push([i % W, (i / W) | 0, +dev.toFixed(2), city.curveOf[i], pc.pts[0].map(v => +v.toFixed(2)), pc.tan[0].map(v => +v.toFixed(2))]); } return out; },
+    ribAt: (x, z) => { if (!ribCache) buildRibbons(); const pc = ribCache.get(z * W + x); return pc ? { prev: [pc.prev % W, (pc.prev / W) | 0], next: [pc.next % W, (pc.next / W) | 0], p0: pc.pts[0].map(v => +v.toFixed(2)), p1: pc.pts[RIB_M].map(v => +v.toFixed(2)), t0: pc.tan[0].map(v => +v.toFixed(2)), t1: pc.tan[RIB_M].map(v => +v.toFixed(2)), e0: +pc.e0.toFixed(3), e1: +pc.e1.toFixed(3), deck: pc.deck, id: city.curveOf[z * W + x] } : { none: true, road: city.road[z * W + x], deg: ribDeg(z * W + x), id: city.curveOf[z * W + x], deck: isDeck(z * W + x) }; },
+    ribKap: () => { if (!ribCache) buildRibbons(); const o = []; for (const [i, pc] of ribCache) { const m = Math.max(...pc.kap.map(Math.abs)); if (m > 1.6) o.push([i % W, (i / W) | 0, +m.toFixed(2), pc.kap.map(v => +v.toFixed(1)).join(' '), +pc.len.toFixed(2)]); } return o; },
     ribTiles: () => { if (!ribCache) buildRibbons(); return [...ribCache.keys()]; },
     getTod: () => tod, setTod: v => { tod = v; }, STYLES, OVERLAYS, isMobile, get styleName() { return styleName; }, get pixelReady() { return pixelReady; }, get pixelMode() { return pixelMode; } };
 })();
@@ -7148,7 +7166,7 @@ const Snd = (function () {
 (function () {
   'use strict';
   const $ = s => document.querySelector(s);
-  const APP_VERSION = {"v":40,"date":"2026-11-17","notes":["Cinema com cara de cinema: fachada colorida, marquise com lâmpadas, cartazes iluminados e o letreiro vertical CINE.","As portas abrem quando alguém entra ou sai dos prédios, e as pessoas saem pela porta de verdade.","Ninguém some mais na frente da câmera; quem sai do trabalho ou das compras volta para uma casa mais longe, e não sempre para a vizinha.","Parque de diversões ampliável: encostando até 4, vira um parque grande com roda-gigante maior, montanha-russa em volta, chapéu mexicano e torre de queda.","Desenho próprio ao juntar: metrô (estação central com abóbada de vidro, trem e torre do relógio), aterro (morro em degraus), reciclagem (galpão de triagem com fardos), termelétrica (torres de resfriamento) e parque eólico.","Limite de parque de diversões, zoológico, museu, porto, aeroporto e outros agora cresce com a população. Ampliar um que já existe não conta como novo."]};
+  const APP_VERSION = {"v":41,"date":"2026-11-17","notes":["Pontes e avenidas em curva feitas em vários trechos agora emendam lisas: sem degrau, sem desvio de lado e sem a mureta atravessando a pista.","Uma quadra reta solta entre duas curvas passa a acompanhar a curva.","A altura da ponte segue o comprimento real do traçado, sem rachadura nas quinas."]};
   const VER = (typeof APP_VERSION !== 'undefined' && APP_VERSION) || { v: 0, date: '', notes: [] };
   const verDate = () => { const p = String(VER.date || '').split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : ''; };
   const { City, DEFS, HAND, TERRA, ROADS, ISSUE_TIPS, ZONE_NAMES, LEVEL_NAMES, ZSTAT, MISSIONS, ACHIEVEMENTS, SCENARIOS, T, Z, W, H, PARCEL, PX } = Sim;
