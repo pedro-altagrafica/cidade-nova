@@ -229,6 +229,29 @@ body.explore #toolbar, body.explore #hint, body.explore #panel, body.explore #co
 .switch.law { align-items: flex-start; padding: 6px 0; border-bottom: 1px solid var(--line); }
 .switch.law small { color: var(--muted); font-size: 11.5px; }
 
+/* ---------- tela de entrada ---------- */
+#intro { position: fixed; inset: 0; z-index: 15; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: max(28px, env(safe-area-inset-top)) 16px max(22px, env(safe-area-inset-bottom));
+  background: linear-gradient(to bottom, rgba(9, 14, 26, 0.8) 0%, rgba(9, 14, 26, 0.2) 32%, rgba(9, 14, 26, 0.08) 52%, rgba(9, 14, 26, 0.75) 78%, rgba(9, 14, 26, 0.92) 100%); transition: opacity 0.6s ease; }
+#intro[hidden] { display: none; }
+#intro.out { opacity: 0; pointer-events: none; }
+.intro-top { text-align: center; animation: introDrop 0.9s cubic-bezier(.2, .9, .2, 1) both; }
+.intro-logo { width: min(240px, 62vw); height: auto; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35)); }
+.intro-title { font-family: var(--font-display); font-weight: 600; font-size: clamp(40px, 11vw, 68px); line-height: 1; margin: 6px 0 4px; letter-spacing: 0.01em; color: #fff; text-shadow: 0 4px 18px rgba(0, 0, 0, 0.45); }
+.intro-title span { color: var(--accent); }
+.intro-tag { margin: 6px 0 0; color: #dfe7f5; font-size: 15px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); }
+.intro-bottom { width: min(360px, 100%); display: flex; flex-direction: column; gap: 10px; align-items: stretch; animation: introRise 0.9s 0.15s cubic-bezier(.2, .9, .2, 1) both; }
+.intro-go { font-size: 19px; padding: 15px 18px; border-radius: 14px; box-shadow: 0 8px 24px rgba(255, 191, 71, 0.35); }
+.intro-row { display: flex; gap: 10px; }
+.intro-row .btn { background: rgba(15, 20, 32, 0.55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.intro-city { margin: -2px 0 2px; text-align: center; color: #e8eef9; font-size: 13px; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6); }
+.intro-ver { background: none; border: 0; color: #a9b6cc; font-size: 12px; text-align: center; padding: 6px; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(169, 182, 204, 0.4); }
+@keyframes introDrop { from { opacity: 0; transform: translateY(-24px); } to { opacity: 1; transform: none; } }
+@keyframes introRise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .intro-top, .intro-bottom { animation: none; } #intro { transition: none; } }
+.ver-line { margin: 14px 0 0; color: var(--muted); font-size: 12px; text-align: center; }
+ul.notes { margin: 8px 0 4px; padding-left: 18px; } ul.notes li { margin: 0 0 8px; line-height: 1.4; }
+body.intro-on #hud, body.intro-on #toolbar, body.intro-on #hint, body.intro-on #confirm, body.intro-on #panel { visibility: hidden; }
+
 </style>
 
 <canvas id="gl" aria-label="Mapa da cidade em 3D"></canvas>
@@ -277,6 +300,27 @@ body.explore #toolbar, body.explore #hint, body.explore #panel, body.explore #co
   <p class="explore-hint" id="explore-hint"></p>
 </div>
 
+<div id="intro" hidden>
+  <div class="intro-top">
+    <svg class="intro-logo" viewBox="0 0 220 96" aria-hidden="true">
+      <circle cx="168" cy="30" r="17" fill="#ffbf47"/>
+      <rect x="8" y="58" width="22" height="34" rx="2" fill="#7fb4e6"/><rect x="34" y="38" width="26" height="54" rx="2" fill="#5b8fd6"/>
+      <rect x="64" y="20" width="24" height="72" rx="2" fill="#3d6fb8"/><rect x="92" y="44" width="30" height="48" rx="2" fill="#5fd38a"/>
+      <rect x="126" y="30" width="22" height="62" rx="2" fill="#4a7cc7"/><rect x="152" y="54" width="28" height="38" rx="2" fill="#f28a6b"/>
+      <rect x="184" y="64" width="26" height="28" rx="2" fill="#ffd27a"/>
+      <g fill="#fff6d8" opacity=".85"><rect x="69" y="28" width="5" height="5"/><rect x="78" y="28" width="5" height="5"/><rect x="69" y="40" width="5" height="5"/><rect x="78" y="52" width="5" height="5"/><rect x="69" y="64" width="5" height="5"/><rect x="40" y="46" width="5" height="5"/><rect x="49" y="58" width="5" height="5"/><rect x="131" y="38" width="5" height="5"/><rect x="139" y="50" width="5" height="5"/><rect x="99" y="52" width="6" height="5"/><rect x="110" y="62" width="6" height="5"/></g>
+      <rect x="0" y="91" width="220" height="5" rx="2" fill="#2b3a52"/>
+    </svg>
+    <h1 class="intro-title">Cidade <span>Nova</span></h1>
+    <p class="intro-tag">Construa, cuide e veja a sua cidade ganhar vida</p>
+  </div>
+  <div class="intro-bottom">
+    <button class="btn intro-go" id="in-go" type="button">▶ Continuar</button>
+    <p class="intro-city" id="in-city"></p>
+    <div class="intro-row"><button class="btn ghost" id="in-new" type="button">Nova cidade</button><button class="btn ghost" id="in-opts" type="button">Opções</button></div>
+    <button class="intro-ver" id="in-ver" type="button"></button>
+  </div>
+</div>
 <div id="modal" hidden><div class="modal-card" id="modal-card" role="dialog" aria-modal="true"></div></div>
 
 <script src="three.min.js"></script>
@@ -400,6 +444,11 @@ const Sim = (function () {
     lighthouse:{ name: 'Farol',            cost: 2500,  upkeep: 40,  size: 1, cat: 'leisure', cov: 'park', radius: 4, covW: 0.6, needWater: true, unlock: 600, max: 2, tour: 8, desc: 'Luz girando à noite na beira da água. Precisa encostar na água.' },
     stadium:  { name: 'Estádio',           cost: 12000, upkeep: 600, size: 3, cat: 'leisure',  cov: 'stadium', radius: 14, covW: 1, needRoad: true, unlock: 4000, desc: 'Orgulho da cidade: felicidade num raio enorme.' },
   };
+  // ampliação: construções iguais encostadas e alinhadas viram um complexo (retângulo de até [largura, fundo] unidades),
+  // com alcance maior, atendimento mais forte, manutenção menor e, nas usinas, mais produção
+  const COMBO = { police: [4, 3], fire: [4, 3], parking: [4, 3], school: [3, 2], hospital: [3, 2], university: [3, 2], bus: [4, 2], metro: [3, 2], landfill: [3, 2], recycling: [3, 2],
+    park: [4, 4], plaza: [4, 4], garden: [4, 4], playground: [3, 3], fountain: [3, 3], solar: [3, 3], water: [4, 3], wind: [4, 4], coal: [3, 2] };
+  const comboBonus = n => { const k = Math.max(0, n - 1); return { R: Math.min(1.5, 1 + 0.12 * k), core: Math.min(0.75, 0.6 + 0.04 * k), w: Math.min(1.3, 1 + 0.1 * k), up: Math.max(0.7, 1 - 0.06 * k), out: Math.min(1.4, 1 + 0.08 * k) }; };
   // prédios colocados à mão: tipo de zona e nível
   const HAND = {
     hR1: { name: 'Casa',                     z: 'R', level: 1, cost: 300,  unlock: 0 },
@@ -683,7 +732,7 @@ const Sim = (function () {
     /* --- consultas --- */
     // ampliação de um complexo: pode ficar sem rua se encostar, alinhada, em outra construção igual
     sameKindBeside(kind, x, z, size) {
-      if (!['police', 'fire', 'parking', 'school', 'hospital', 'university'].includes(kind)) return false;
+      if (!COMBO[kind]) return false;
       for (const [dx, dz] of [[size, 0], [-size, 0], [0, size], [0, -size]]) { const nx = x + dx, nz = z + dz; if (!this.inb(nx, nz)) continue; const m = this.bmap.get(this.bld[this.idx(nx, nz)]); if (m && m.kind === kind && m.x === nx && m.z === nz) return true; }
       return false;
     }
@@ -856,7 +905,49 @@ const Sim = (function () {
       return { id: this.nextId++, kind, x, z, size, level, occ: 0.25, happy: 55, age: 0, abandoned: false, badMonths: 0, seed: (Math.random() * 1e9) >>> 0, rot: 0, h: this.height[this.idx(x, z)], burning: false, fireMonths: 0, hand: !!hand, crime: 0, powered: true, watered: true, cons: 0, topIssue: null, truckArrived: false };
     }
 
+    /* --- ampliações (complexos) --- */
+    // grupo de construções iguais ligadas a b (mesmo tipo, alinhadas, prontas e no mesmo patamar); extra = construção ainda não feita (prévia)
+    comboComp(b, extra) {
+      const S = b.size || 1, h0 = b.h || 0;
+      const at = (x, z) => { if (extra && extra.x === x && extra.z === z) return extra; if (!this.inb(x, z)) return null; const m = this.bmap.get(this.bld[this.idx(x, z)]); return m && m.kind === b.kind && m.x === x && m.z === z && !(m.cons > 0) && (m.h || 0) === h0 ? m : null; };
+      const comp = [b], seen = new Set([b]);
+      for (let i = 0; i < comp.length && comp.length < 240; i++) { const c = comp[i]; for (const [dx, dz] of [[S, 0], [-S, 0], [0, S], [0, -S]]) { const m = at(c.x + dx, c.z + dz); if (m && !seen.has(m)) { seen.add(m); comp.push(m); } } }
+      return { comp, at, seen };
+    }
+    // divide o grupo em retângulos (de cima para baixo, da esquerda para a direita); cada retângulo é um complexo
+    comboRects(b, extra) {
+      const lim = COMBO[b.kind], S = b.size || 1, { comp, at, seen } = this.comboComp(b, extra);
+      comp.sort((p, q) => p.z - q.z || p.x - q.x);
+      const used = new Set(), out = [];
+      for (const L of comp) {
+        if (used.has(L)) continue;
+        let w = 1; while (w < lim[0]) { const m = at(L.x + w * S, L.z); if (!m || used.has(m) || !seen.has(m)) break; w++; }
+        let d = 1; while (d < lim[1]) { let ok = true; for (let k = 0; k < w; k++) { const m = at(L.x + k * S, L.z + d * S); if (!m || used.has(m) || !seen.has(m)) { ok = false; break; } } if (!ok) break; d++; }
+        const mem = []; for (let j = 0; j < d; j++) for (let k = 0; k < w; k++) { const m = at(L.x + k * S, L.z + j * S); mem.push(m); used.add(m); }
+        out.push({ leader: L, kind: b.kind, w: w * S, d: d * S, nx: w, nz: d, n: mem.length, mem, cx: L.x + w * S / 2, cz: L.z + d * S / 2, sig: L.id + ':' + w + 'x' + d });
+      }
+      return out;
+    }
+    groups() {
+      if (this._groups && !this._grpDirty) return this._groups;
+      const map = new Map(), seen = new Set();
+      for (const b of this.buildings) {
+        if (!COMBO[b.kind] || b.cons > 0 || seen.has(b.id)) continue;
+        for (const g of this.comboRects(b)) { for (const m of g.mem) seen.add(m.id); if (g.n > 1) for (const m of g.mem) map.set(m.id, g); }
+      }
+      this._groups = map; this._grpDirty = false; return map;
+    }
+    groupOf(b) { return b && COMBO[b.kind] ? this.groups().get(b.id) || null : null; }
+    // prévia: o complexo que se formaria construindo kind em (x, z)
+    groupPreview(kind, x, z) {
+      const d = DEFS[kind]; if (!COMBO[kind] || !d || !this.inb(x, z)) return null;
+      const v = { id: -1, kind, x, z, size: d.size, h: this.height[this.idx(x, z)], cons: 0 };
+      const g = this.comboRects(v, v).find(r => r.mem.includes(v));
+      return g && g.n > 1 ? g : null;
+    }
+
     addBuilding(b) {
+      this._grpDirty = true;
       this.buildings.push(b); this.bmap.set(b.id, b);
       for (let dz = 0; dz < FD(b); dz++) for (let dx = 0; dx < FW(b); dx++) {
         const i = this.idx(b.x + dx, b.z + dz);
@@ -870,6 +961,7 @@ const Sim = (function () {
     }
 
     removeBuilding(b) {
+      this._grpDirty = true;
       for (let dz = 0; dz < FD(b); dz++) for (let dx = 0; dx < FW(b); dx++) this.bld[this.idx(b.x + dx, b.z + dz)] = -1;
       const k = this.buildings.indexOf(b);
       if (k >= 0) this.buildings.splice(k, 1);
@@ -918,19 +1010,22 @@ const Sim = (function () {
     recomputeCoverage() {
       for (const k in this.cov) this.cov[k].fill(0);
       this.powerCov.fill(0); this.waterCov.fill(0);
+      const groups = this.groups(), done = new Set();
       for (const b of this.buildings) {
         const d = DEFS[b.kind]; if (!d || !d.size || b.cons > 0) continue;
-        const cx = b.x + b.size / 2, cz = b.z + b.size / 2, R = d.radius;
+        const g = groups.get(b.id); if (g) { if (done.has(g)) continue; done.add(g); }
+        const bo = g ? comboBonus(g.n) : null, core = bo ? bo.core : 0.6;
+        const cx = g ? g.cx : b.x + b.size / 2, cz = g ? g.cz : b.z + b.size / 2, R = d.radius * (bo ? bo.R : 1);
         const map = d.cov ? this.cov[d.cov] : (d.power ? this.powerCov : d.water ? this.waterCov : null);
         if (!map) continue;
-        const w = d.covW || 1;
+        const w = Math.min(1, (d.covW || 1) * (bo ? bo.w : 1));
         const x0 = Math.max(0, Math.floor(cx - R)), x1 = Math.min(W - 1, Math.ceil(cx + R));
         const z0 = Math.max(0, Math.floor(cz - R)), z1 = Math.min(H - 1, Math.ceil(cz + R));
         for (let z = z0; z <= z1; z++) for (let x = x0; x <= x1; x++) {
           const dx = x + 0.5 - cx, dz = z + 0.5 - cz; const dist = Math.sqrt(dx * dx + dz * dz);
           if (dist > R) continue;
           const i = z * W + x;
-          if (d.cov) { const v = (dist <= 0.6 * R ? 1 : 1 - (dist - 0.6 * R) / (0.4 * R + 1)) * w; if (v > map[i]) map[i] = v; }
+          if (d.cov) { const v = (dist <= core * R ? 1 : 1 - (dist - core * R) / ((1 - core) * R + 1)) * w; if (v > map[i]) map[i] = v; }
           else map[i] = 1;
         }
       }
@@ -993,8 +1088,9 @@ const Sim = (function () {
       let pSupply = 0, wSupply = 0;
       for (const b of this.buildings) {
         const d = DEFS[b.kind]; if (b.cons > 0) continue;
-        if (d && d.power) pSupply += d.power;
-        if (d && d.water) wSupply += d.water;
+        const g = d && (d.power || d.water) ? this.groupOf(b) : null, out = g ? comboBonus(g.n).out : 1;
+        if (d && d.power) pSupply += Math.round(d.power * out);
+        if (d && d.water) wSupply += Math.round(d.water * out);
       }
       let pUsed = 0, wUsed = 0, pNeed = 0, wNeed = 0, unpowered = 0, unwatered = 0;
       for (const b of this.buildings) {
@@ -1154,6 +1250,7 @@ const Sim = (function () {
         if (b.cons > 0) {
           b.cons--;
           if (b.cons === 0) {
+            if (COMBO[b.kind]) this._grpDirty = true;
             this.markChunk(b.x, b.z); this.markChunk(b.x + FW(b) - 1, b.z + FD(b) - 1);
             this.dirty.buildings = true; this.completedQueue.push({ x: b.x, z: b.z, kind: b.kind, size: b.size, level: b.level });
             if (DEFS[b.kind]) { this.dirty.coverage = true; }
@@ -1365,7 +1462,8 @@ const Sim = (function () {
       const expBy = {};
       for (const b of this.buildings) {
         const d = DEFS[b.kind]; if (!d || !d.upkeep) continue;
-        expBy[d.name] = (expBy[d.name] || 0) + d.upkeep;
+        const g = this.groupOf(b);
+        expBy[d.name] = (expBy[d.name] || 0) + Math.round(d.upkeep * (g ? comboBonus(g.n).up : 1));
       }
       let law = 0; for (const k in POLICIES) if (this.policies[k]) law += this.policyCost(k);
       if (law) expBy['Leis municipais'] = Math.round(law);
@@ -1497,6 +1595,7 @@ const Sim = (function () {
       this.place('wind', 40, 44); this.place('wind', 40, 46);
       this.place('water', 40, 49);
       for (const b of this.buildings) b.cons = 0;
+      this._grpDirty = true;
       this.spawnQueue.length = 0;
       this.recomputeCoverage();
       this.roadNearDirty = true;
@@ -1565,7 +1664,7 @@ const Sim = (function () {
     }
   }
 
-  return { City, BUSINESS, businessOf, POLICIES, DEFS, HAND, TERRA, ROADS, ISSUE_TIPS, ZSTAT, SERVICE_KINDS, COV_KINDS, ZONE_NAMES, LEVEL_NAMES, TITLES, MISSIONS, ACHIEVEMENTS, SCENARIOS, T, Z, ZK, W, H, N, CHUNK, CX, PARCEL, PX, TH, MONTH_STEPS, mulberry32, hash2, clamp };
+  return { COMBO, comboBonus, City, BUSINESS, businessOf, POLICIES, DEFS, HAND, TERRA, ROADS, ISSUE_TIPS, ZSTAT, SERVICE_KINDS, COV_KINDS, ZONE_NAMES, LEVEL_NAMES, TITLES, MISSIONS, ACHIEVEMENTS, SCENARIOS, T, Z, ZK, W, H, N, CHUNK, CX, PARCEL, PX, TH, MONTH_STEPS, mulberry32, hash2, clamp };
 })();
 
 
@@ -2555,34 +2654,233 @@ const R3 = (function () {
   }
 
   /* ---------- complexos: construções iguais encostadas viram um prédio só, maior ---------- */
-  const COMBO = { police: 1, fire: 1, parking: 1, school: 1, hospital: 1, university: 1 };
+  // tipos com desenho próprio de complexo; os demais (metrô, aterro, reciclagem, eólicas, termelétrica) ganham só o efeito
+  const COMBO_VIS = { police: 1, fire: 1, parking: 1, school: 1, hospital: 1, university: 1, park: 1, plaza: 1, garden: 1, playground: 1, fountain: 1, bus: 1, solar: 1, water: 1 };
+  const FLAT_COMBO = { park: 1, plaza: 1, garden: 1, playground: 1, fountain: 1, solar: 1, water: 1 };
   const comboRole = new Map(), chunkMates = new Map();
-  // grupo retangular de construções do mesmo tipo, alinhadas e prontas; todos os membros chegam ao mesmo resultado
-  function comboOf(b) {
-    if (!COMBO[b.kind] || b.cons > 0 || !city || city.bmap.get(b.id) !== b) return null;
-    const S = b.size, at = (x, z) => { if (x < 0 || z < 0 || x >= W || z >= W) return null; const m = city.bmap.get(city.bld[z * W + x]); return m && m.kind === b.kind && m.x === x && m.z === z && !(m.cons > 0) && m.h === b.h ? m : null; };
-    const comp = [b], seen = new Set([b.id]);
-    for (let i = 0; i < comp.length && comp.length < 40; i++) { const c = comp[i]; for (const [dx, dz] of [[S, 0], [-S, 0], [0, S], [0, -S]]) { const m = at(c.x + dx, c.z + dz); if (m && !seen.has(m.id)) { seen.add(m.id); comp.push(m); } } }
-    if (comp.length < 2) return null;
-    comp.sort((p, q) => p.z - q.z || p.x - q.x);
-    const used = new Set(), MAXW = S === 1 ? 4 : 3, MAXD = S === 1 ? 3 : 2;
-    for (const L of comp) {
-      if (used.has(L.id)) continue;
-      let w = 1; while (w < MAXW) { const m = at(L.x + w * S, L.z); if (!m || used.has(m.id) || !seen.has(m.id)) break; w++; }
-      let d = 1; while (d < MAXD) { let ok = true; for (let k = 0; k < w; k++) { const m = at(L.x + k * S, L.z + d * S); if (!m || used.has(m.id) || !seen.has(m.id)) { ok = false; break; } } if (!ok) break; d++; }
-      const mem = []; for (let j = 0; j < d; j++) for (let k = 0; k < w; k++) { const m = at(L.x + k * S, L.z + j * S); mem.push(m); used.add(m.id); }
-      if (mem.includes(b)) return mem.length > 1 ? { leader: L, w: w * S, d: d * S, n: mem.length, mem, sig: L.id + ':' + w + 'x' + d } : null;
+  function comboOf(b) { if (!COMBO_VIS[b.kind] || b.cons > 0 || !city || city.bmap.get(b.id) !== b) return null; return city.groupOf(b); }
+  // chão: faixa entre dois pontos, elipse, anel de elipse e laço retangular de cantos redondos
+  function gStrip(tb, ax, az, bx, bz, hw, y, col) { const dx = bx - ax, dz = bz - az, l = Math.hypot(dx, dz) || 1, nx = -dz / l * hw, nz = dx / l * hw; tb.quadOut([ax + nx, y, az + nz], [bx + nx, y, bz + nz], [bx - nx, y, bz - nz], [ax - nx, y, az - nz], col, 0, 1, 0); }
+  function gDisc(tb, cx, cz, rx, rz, y, col, segs) { segs = segs || 22; for (let k = 0; k < segs; k++) { const a0 = k / segs * Math.PI * 2, a1 = (k + 1) / segs * Math.PI * 2; tb.triOut([cx, y, cz], [cx + Math.cos(a0) * rx, y, cz + Math.sin(a0) * rz], [cx + Math.cos(a1) * rx, y, cz + Math.sin(a1) * rz], col, 0, 1, 0); } }
+  function gRing(tb, cx, cz, rx, rz, w, y, col, segs) { segs = segs || 26; for (let k = 0; k < segs; k++) { const a0 = k / segs * Math.PI * 2, a1 = (k + 1) / segs * Math.PI * 2, c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1); tb.quadOut([cx + c0 * rx, y, cz + s0 * rz], [cx + c1 * rx, y, cz + s1 * rz], [cx + c1 * (rx + w), y, cz + s1 * (rz + w)], [cx + c0 * (rx + w), y, cz + s0 * (rz + w)], col, 0, 1, 0); } }
+  function gLoop(tb, x0, z0, x1, z1, rc, hw, y, col) {
+    rc = Math.max(hw + 0.02, Math.min(rc, (x1 - x0) / 2, (z1 - z0) / 2));
+    gStrip(tb, x0 + rc, z0, x1 - rc, z0, hw, y, col); gStrip(tb, x1, z0 + rc, x1, z1 - rc, hw, y, col); gStrip(tb, x1 - rc, z1, x0 + rc, z1, hw, y, col); gStrip(tb, x0, z1 - rc, x0, z0 + rc, hw, y, col);
+    const arc = (acx, acz, a0) => { const ri = rc - hw, ro = rc + hw; for (let k = 0; k < 6; k++) { const t0 = a0 + k / 6 * Math.PI / 2, t1 = a0 + (k + 1) / 6 * Math.PI / 2; tb.quadOut([acx + Math.cos(t0) * ri, y, acz + Math.sin(t0) * ri], [acx + Math.cos(t1) * ri, y, acz + Math.sin(t1) * ri], [acx + Math.cos(t1) * ro, y, acz + Math.sin(t1) * ro], [acx + Math.cos(t0) * ro, y, acz + Math.sin(t0) * ro], col, 0, 1, 0); } };
+    arc(x0 + rc, z0 + rc, Math.PI); arc(x1 - rc, z0 + rc, -Math.PI / 2); arc(x1 - rc, z1 - rc, 0); arc(x0 + rc, z1 - rc, Math.PI / 2);
+  }
+  // planta do parque ampliado (coordenadas a partir do canto do complexo): caminho em laço, lago e coreto
+  function parkLayout(g) {
+    const LW = g.w, LD = g.d, m = Math.min(0.3, Math.min(LW, LD) * 0.27), rc = Math.max(0.12, Math.min(0.45, Math.min(LW, LD) / 2 - m - 0.02));
+    const pond = LW >= 2 && LD >= 2 ? { cx: LW / 2, cz: LD / 2, rx: Math.min(LW * 0.22, LW / 2 - m - 0.24), rz: Math.min(LD * 0.22, LD / 2 - m - 0.24) } : null;
+    let gaz = null;
+    if (g.n >= 3) {
+      if (!pond) gaz = { x: LW / 2, z: LD / 2 };
+      else { const gx = LW / 2 - pond.rx - m, gz = LD / 2 - pond.rz - m; if (gx >= gz && gx >= 0.42) gaz = { x: m + gx / 2, z: LD / 2 }; else if (gz >= 0.42) gaz = { x: LW / 2, z: m + gz / 2 }; }
     }
-    return null;
+    return { LW, LD, m, rc, pond, gaz };
+  }
+  // árvores dos parques e praças ampliados (as do parque ficam fora do caminho e do lago; as da praça, em floreiras na borda)
+  function comboTreeSpots(g) {
+    const out = [], LW = g.w, LD = g.d, hs = (a, b) => Sim.hash2(g.leader.x * 7 + a, g.leader.z * 5 + b, 41);
+    if (g.kind === 'park') {
+      const P = parkLayout(g);
+      for (let tz = 0; tz < LD; tz++) for (let tx = 0; tx < LW; tx++) for (const [ox, oz] of [[0.16, 0.17], [0.83, 0.2], [0.2, 0.84], [0.8, 0.8], [0.5, 0.5]]) {
+        const px = tx + ox, pz = tz + oz, edge = Math.min(px, LW - px, pz, LD - pz);
+        const entr = (Math.abs(px - LW / 2) < 0.16 && (pz < P.m + 0.12 || pz > LD - P.m - 0.12)) || (Math.abs(pz - LD / 2) < 0.16 && (px < P.m + 0.12 || px > LW - P.m - 0.12));
+        let ok = false;
+        if (edge < P.m - 0.1) ok = !entr;
+        else if (edge > P.m + 0.16) {
+          ok = Math.abs(px - LW / 2) > 0.17 && Math.abs(pz - LD / 2) > 0.17;
+          if (P.pond && ((px - P.pond.cx) / (P.pond.rx + 0.2)) ** 2 + ((pz - P.pond.cz) / (P.pond.rz + 0.2)) ** 2 < 1) ok = false;
+          if (P.gaz && Math.hypot(px - P.gaz.x, pz - P.gaz.z) < 0.36) ok = false;
+        }
+        if (ok && hs(tx * 5 + ox * 10, tz * 5 + oz * 10) < 0.85) out.push([px, pz]);
+      }
+    } else if (g.kind === 'plaza') {
+      const ins = 0.2, pts = [];
+      const side = (ax, az, bx, bz) => { const L = Math.hypot(bx - ax, bz - az), k = Math.max(1, Math.round(L / 0.5)); for (let i = 0; i <= k; i++) { const t = i / k; if (L >= 0.9 && Math.abs(t - 0.5) * L < 0.3) continue; pts.push([ax + (bx - ax) * t, az + (bz - az) * t]); } };
+      side(ins, ins, LW - ins, ins); side(LW - ins, ins, LW - ins, LD - ins); side(LW - ins, LD - ins, ins, LD - ins); side(ins, LD - ins, ins, ins);
+      for (const p of pts) if (!out.some(q => Math.hypot(q[0] - p[0], q[1] - p[1]) < 0.2)) out.push(p);
+    }
+    return out;
+  }
+  // brinquedos do playground ampliado (um por quadra)
+  function playKit(tb, px, pz, v) {
+    const red = [0.85, 0.25, 0.25], yel = [0.95, 0.75, 0.2], blue = [0.25, 0.45, 0.85], grn = [0.3, 0.7, 0.35], gry = [0.6, 0.6, 0.62], plain = cellUV('plain');
+    if (v === 0) { // escorregador com escada
+      solidBox(tb, px - 0.3, 0, pz - 0.18, px - 0.26, 0.35, pz - 0.14, red); solidBox(tb, px - 0.1, 0, pz - 0.18, px - 0.06, 0.35, pz - 0.14, red); solidBox(tb, px - 0.3, 0.35, pz - 0.18, px - 0.06, 0.39, pz - 0.14, red);
+      solidBox(tb, px - 0.28, 0, pz - 0.04, px - 0.08, 0.3, pz, yel);
+      tb.quad([px - 0.08, 0.3, pz - 0.04], [px - 0.08, 0.3, pz], [px + 0.28, 0.02, pz], [px + 0.28, 0.02, pz - 0.04], plain, yel); tb.quad([px + 0.28, 0.02, pz - 0.04], [px + 0.28, 0.02, pz], [px - 0.08, 0.3, pz], [px - 0.08, 0.3, pz - 0.04], plain, mul(yel, 0.8));
+    } else if (v === 1) { // balanços
+      for (const ox of [-0.25, 0.25]) solidBox(tb, px + ox - 0.02, 0, pz - 0.02, px + ox + 0.02, 0.36, pz + 0.02, blue);
+      solidBox(tb, px - 0.27, 0.34, pz - 0.02, px + 0.27, 0.37, pz + 0.02, blue);
+      for (const ox of [-0.1, 0.1]) { solidBox(tb, px + ox - 0.05, 0.12, pz - 0.03, px + ox + 0.05, 0.14, pz + 0.03, red); for (const k of [-0.04, 0.04]) solidBox(tb, px + ox + k - 0.004, 0.14, pz - 0.004, px + ox + k + 0.004, 0.34, pz + 0.004, gry); }
+    } else if (v === 2) { // gira-gira
+      cylinder(tb, px, pz, 0.2, 0.02, 0.06, 12, red, yel); cylinder(tb, px, pz, 0.025, 0.06, 0.22, 6, gry);
+      for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2; solidBox(tb, px + Math.cos(a) * 0.15 - 0.012, 0.06, pz + Math.sin(a) * 0.15 - 0.012, px + Math.cos(a) * 0.15 + 0.012, 0.16, pz + Math.sin(a) * 0.15 + 0.012, blue); }
+    } else if (v === 3) { // trepa-trepa
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) solidBox(tb, px - 0.2 + i * 0.2 - 0.01, 0, pz - 0.2 + j * 0.2 - 0.01, px - 0.2 + i * 0.2 + 0.01, 0.26, pz - 0.2 + j * 0.2 + 0.01, grn);
+      for (const y of [0.13, 0.26]) { for (let i = 0; i < 3; i++) { solidBox(tb, px - 0.21, y - 0.01, pz - 0.2 + i * 0.2 - 0.008, px + 0.21, y, pz - 0.2 + i * 0.2 + 0.008, grn); solidBox(tb, px - 0.2 + i * 0.2 - 0.008, y - 0.01, pz - 0.21, px - 0.2 + i * 0.2 + 0.008, y, pz + 0.21, grn); } }
+    } else if (v === 4) { // gangorras
+      for (const oz of [-0.12, 0.12]) { solidBox(tb, px - 0.03, 0, pz + oz - 0.03, px + 0.03, 0.08, pz + oz + 0.03, gry); tb.quad([px - 0.28, 0.03, pz + oz - 0.03], [px - 0.28, 0.03, pz + oz + 0.03], [px + 0.28, 0.13, pz + oz + 0.03], [px + 0.28, 0.13, pz + oz - 0.03], plain, oz < 0 ? red : blue); tb.quad([px + 0.28, 0.13, pz + oz - 0.03], [px + 0.28, 0.13, pz + oz + 0.03], [px - 0.28, 0.03, pz + oz + 0.03], [px - 0.28, 0.03, pz + oz - 0.03], plain, mul(oz < 0 ? red : blue, 0.75)); }
+    } else { // tanque de areia
+      const wd = [0.62, 0.45, 0.3]; solidBox(tb, px - 0.26, 0, pz - 0.26, px + 0.26, 0.06, pz - 0.22, wd); solidBox(tb, px - 0.26, 0, pz + 0.22, px + 0.26, 0.06, pz + 0.26, wd); solidBox(tb, px - 0.26, 0, pz - 0.22, px - 0.22, 0.06, pz + 0.22, wd); solidBox(tb, px + 0.22, 0, pz - 0.22, px + 0.26, 0.06, pz + 0.22, wd);
+      tb.top(px - 0.22, pz - 0.22, px + 0.22, pz + 0.22, 0.04, cellUV('plain'), [0.93, 0.85, 0.6]); solidBox(tb, px - 0.05, 0.04, pz - 0.02, px + 0.03, 0.08, pz + 0.05, red);
+    }
+  }
+  // ônibus parado (bico para +z)
+  function busModel(tb, bx, bz, col) {
+    solidBox(tb, bx - 0.055, 0.025, bz - 0.18, bx + 0.055, 0.135, bz + 0.18, col);
+    solidBox(tb, bx - 0.057, 0.085, bz - 0.15, bx + 0.057, 0.122, bz + 0.17, [0.16, 0.2, 0.27]);
+    solidBox(tb, bx - 0.05, 0.135, bz - 0.17, bx + 0.05, 0.145, bz + 0.17, [0.94, 0.94, 0.94]);
+    for (const oz of [-0.11, 0.11]) for (const ox of [-0.058, 0.05]) solidBox(tb, bx + ox, 0.005, bz + oz - 0.025, bx + ox + 0.008, 0.045, bz + oz + 0.025, [0.1, 0.1, 0.1]);
   }
   function genCombo(gb, L, g, st) {
-    const r = Sim.mulberry32(L.seed ^ 0x3c6ef372), fake = Object.assign({}, L, { w: g.w, d: g.d }), rot = bRot(fake);
+    const r = Sim.mulberry32(L.seed ^ 0x3c6ef372), fake = Object.assign({}, L, { w: g.w, d: g.d }), rot = FLAT_COMBO[L.kind] ? 0 : bRot(fake);
     const LW = rot % 2 ? g.d : g.w, LD = rot % 2 ? g.w : g.d, cx = L.x - HW + g.w / 2, cz = L.z - HH + g.d / 2, x = cx - LW / 2, z = cz - LD / 2, X1 = x + LW, Z1 = z + LD;
     const fh = st.floorH, roofC = cellUV('roof'), tb = new GeoBuilder(), meta = { top: 0.5, emit: [] }, n = g.n, zc = z + LD / 2, xc = x + LW / 2;
     const heli = (hx, hy, hz, rad) => { cylinder(tb, hx, hz, rad, hy, hy + 0.012, 14, [0.36, 0.37, 0.4], [0.36, 0.37, 0.4]); cylinder(tb, hx, hz, rad * 0.82, hy + 0.012, hy + 0.016, 14, [0.95, 0.95, 0.95], [0.3, 0.31, 0.34]); solidBox(tb, hx - rad * 0.3, hy + 0.016, hz - rad * 0.38, hx - rad * 0.2, hy + 0.02, hz + rad * 0.38, [0.96, 0.96, 0.96]); solidBox(tb, hx + rad * 0.2, hy + 0.016, hz - rad * 0.38, hx + rad * 0.3, hy + 0.02, hz + rad * 0.38, [0.96, 0.96, 0.96]); solidBox(tb, hx - rad * 0.2, hy + 0.016, hz - rad * 0.05, hx + rad * 0.2, hy + 0.02, hz + rad * 0.05, [0.96, 0.96, 0.96]); };
     const flag = (fx, fz, col) => { solidBox(tb, fx - 0.012, 0, fz - 0.012, fx + 0.012, 0.9, fz + 0.012, [0.8, 0.8, 0.82]); solidBox(tb, fx + 0.012, 0.74, fz - 0.005, fx + 0.24, 0.9, fz + 0.005, col); };
     const lot = (x0, z0, x1, z1, cars) => { tb.top(x0, z0, x1, z1, 0.011, roofC, [0.33, 0.34, 0.37]); const k = Math.max(1, Math.floor((x1 - x0 - 0.08) / 0.2)); for (let i = 0; i <= k; i++) tb.top(x0 + 0.04 + i * 0.2, z0 + 0.04, x0 + 0.055 + i * 0.2, z1 - 0.04, 0.013, roofC, [0.9, 0.9, 0.9]); for (let i = 0; i < k; i++) if (r() < cars) { const gg = new GeoBuilder(); parkedCar(gg, x0 + 0.145 + i * 0.2, (z0 + z1) / 2, r, Math.min(0.78, (z1 - z0 - 0.06) / 0.36)); tb.merge(gg, 0, 0, 0, 0.012); } };
     switch (L.kind) {
+      case 'park': {     // parque municipal: gramado inteiro, caminho em laço, entradas, lago com borda de pedra e coreto
+        const P = parkLayout(g), G = [0.5, 0.79, 0.41], PATH = [0.86, 0.8, 0.64], RIM = [0.72, 0.7, 0.64], WAT = [0.33, 0.6, 0.86], y = 0.013;
+        tb.top(x + 0.02, z + 0.02, X1 - 0.02, Z1 - 0.02, 0.011, roofC, G);
+        gLoop(tb, x + P.m, z + P.m, X1 - P.m, Z1 - P.m, P.rc, 0.06, y, PATH);
+        if (LW >= 1) { gStrip(tb, xc, z, xc, z + P.m, 0.06, y, PATH); gStrip(tb, xc, Z1, xc, Z1 - P.m, 0.06, y, PATH); }
+        if (LD >= 1) { gStrip(tb, x, zc, x + P.m, zc, 0.06, y, PATH); gStrip(tb, X1, zc, X1 - P.m, zc, 0.06, y, PATH); }
+        const gx = P.gaz ? x + P.gaz.x : 0, gz = P.gaz ? z + P.gaz.z : 0;
+        if (P.pond) {
+          const pcx = x + P.pond.cx, pcz = z + P.pond.cz, rx = P.pond.rx, rz = P.pond.rz;
+          gDisc(tb, pcx, pcz, rx, rz, 0.012, WAT); gRing(tb, pcx, pcz, rx, rz, 0.05, 0.016, RIM);
+          for (const [ax, az, bx2, bz2] of [[xc, z + P.m, xc, pcz - rz - 0.05], [xc, Z1 - P.m, xc, pcz + rz + 0.05], [x + P.m, zc, pcx - rx - 0.05, zc], [X1 - P.m, zc, pcx + rx + 0.05, zc]]) {
+            if (P.gaz && Math.hypot((ax + bx2) / 2 - gx, (az + bz2) / 2 - gz) < 0.3) continue;
+            if (Math.hypot(bx2 - ax, bz2 - az) > 0.08) gStrip(tb, ax, az, bx2, bz2, 0.05, y, PATH);
+          }
+          if (rx > 0.3) { const ix = pcx + rx * 0.35, iz = pcz - rz * 0.2; gDisc(tb, ix, iz, 0.09, 0.07, 0.02, [0.45, 0.72, 0.38], 10); bush(tb, ix, iz, 0.05, [0.28, 0.55, 0.27], null); }
+          for (let k = 0; k < Math.min(4, n); k++) { const a = k * 2.1 + 0.4, dx2 = pcx + Math.cos(a) * rx * 0.55, dz2 = pcz + Math.sin(a) * rz * 0.55; solidBox(tb, dx2 - 0.018, 0.012, dz2 - 0.01, dx2 + 0.018, 0.035, dz2 + 0.01, [0.96, 0.96, 0.92]); solidBox(tb, dx2 + 0.012, 0.03, dz2 - 0.006, dx2 + 0.026, 0.05, dz2 + 0.006, [0.96, 0.96, 0.92]); }
+        } else if (LW >= 2 && LD >= 2) { gStrip(tb, xc, z + P.m, xc, Z1 - P.m, 0.05, y, PATH); gStrip(tb, x + P.m, zc, X1 - P.m, zc, 0.05, y, PATH); }
+        if (P.gaz) {   // coreto
+          if (P.pond) { const toRing = Math.abs(gx - (x + P.m)) < Math.abs(gz - (z + P.m)) ? [x + P.m, gz] : [gx, z + P.m]; gStrip(tb, toRing[0], toRing[1], gx, gz, 0.05, y, PATH); }
+          gDisc(tb, gx, gz, 0.2, 0.2, 0.016, PATH, 12); cylinder(tb, gx, gz, 0.16, 0.0, 0.05, 8, [0.95, 0.94, 0.9], [0.85, 0.82, 0.75]);
+          for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; solidBox(tb, gx + Math.cos(a) * 0.13 - 0.008, 0.05, gz + Math.sin(a) * 0.13 - 0.008, gx + Math.cos(a) * 0.13 + 0.008, 0.24, gz + Math.sin(a) * 0.13 + 0.008, [0.96, 0.96, 0.96]); }
+          hipRoof(tb, gx - 0.18, gx + 0.18, gz - 0.18, gz + 0.18, 0.24, 0.12, [0.75, 0.32, 0.25], 0); meta.top = 0.36;
+        }
+        const BEN = [0.55, 0.38, 0.22];
+        for (let k = 0, nb = Math.min(10, 2 + n * 2); k < nb; k++) {   // bancos na beira do caminho
+          const t = (k + 0.5) / nb, per = 2 * (LW + LD - 4 * P.m), d = t * per, iw = LW - 2 * P.m, idp = LD - 2 * P.m; let bx, bz, along;
+          if (d < iw) { bx = x + P.m + d; bz = z + P.m + 0.12; along = true; } else if (d < iw + idp) { bx = X1 - P.m - 0.12; bz = z + P.m + d - iw; along = false; } else if (d < 2 * iw + idp) { bx = X1 - P.m - (d - iw - idp); bz = Z1 - P.m - 0.12; along = true; } else { bx = x + P.m + 0.12; bz = Z1 - P.m - (d - 2 * iw - idp); along = false; }
+          if (Math.abs(bx - xc) < 0.15 || Math.abs(bz - zc) < 0.15) continue;
+          if (along) solidBox(tb, bx - 0.09, 0.02, bz - 0.03, bx + 0.09, 0.07, bz + 0.03, BEN); else solidBox(tb, bx - 0.03, 0.02, bz - 0.09, bx + 0.03, 0.07, bz + 0.09, BEN);
+        }
+        for (const [lx, lz] of [[x + P.m + 0.1, z + P.m + 0.1], [X1 - P.m - 0.1, Z1 - P.m - 0.1], [X1 - P.m - 0.1, z + P.m + 0.1], [x + P.m + 0.1, Z1 - P.m - 0.1]]) { solidBox(tb, lx - 0.008, 0, lz - 0.008, lx + 0.008, 0.26, lz + 0.008, [0.25, 0.27, 0.3]); solidBox(tb, lx - 0.022, 0.26, lz - 0.022, lx + 0.022, 0.29, lz + 0.022, [0.98, 0.94, 0.75]); }
+        meta.top = Math.max(meta.top, 0.3); break;
+      }
+      case 'plaza': {    // praça grande: piso com desenho, floreiras com árvores na borda e, no meio, monumento ou chafariz
+        const PV = [0.8, 0.78, 0.72], LN = [0.7, 0.68, 0.62], y = 0.013;
+        tb.top(x + 0.02, z + 0.02, X1 - 0.02, Z1 - 0.02, 0.011, roofC, PV);
+        for (let k = 1; k < LW * 2; k++) tb.top(x + k * 0.5 - 0.006, z + 0.06, x + k * 0.5 + 0.006, Z1 - 0.06, y, roofC, LN);
+        for (let k = 1; k < LD * 2; k++) tb.top(x + 0.06, z + k * 0.5 - 0.006, X1 - 0.06, z + k * 0.5 + 0.006, y, roofC, LN);
+        gRing(tb, xc, zc, Math.min(LW, LD) * 0.3, Math.min(LW, LD) * 0.3, 0.05, 0.015, [0.6, 0.5, 0.42], 24);
+        for (const [px, pz] of comboTreeSpots(g)) { solidBox(tb, x + px - 0.09, 0, z + pz - 0.09, x + px + 0.09, 0.07, z + pz + 0.09, [0.55, 0.55, 0.57]); tb.top(x + px - 0.075, z + pz - 0.075, x + px + 0.075, z + pz + 0.075, 0.072, roofC, [0.38, 0.3, 0.22]); }
+        if (n >= 4) {   // chafariz no meio
+          cylinder(tb, xc, zc, 0.36, 0.0, 0.1, 16, [0.85, 0.83, 0.78], [0.38, 0.66, 0.92]); cylinder(tb, xc, zc, 0.06, 0.1, 0.32, 8, [0.85, 0.83, 0.78]); cylinder(tb, xc, zc, 0.16, 0.32, 0.36, 12, [0.85, 0.83, 0.78], [0.42, 0.7, 0.95]); solidBox(tb, xc - 0.015, 0.36, zc - 0.015, xc + 0.015, 0.55, zc + 0.015, [0.62, 0.86, 1.0]); meta.top = 0.55;
+        } else if (n >= 2) {   // monumento: pedestal e estátua
+          solidBox(tb, xc - 0.16, 0, zc - 0.16, xc + 0.16, 0.08, zc + 0.16, [0.72, 0.7, 0.66]); solidBox(tb, xc - 0.08, 0.08, zc - 0.08, xc + 0.08, 0.34, zc + 0.08, [0.82, 0.8, 0.76]);
+          solidBox(tb, xc - 0.035, 0.34, zc - 0.03, xc + 0.035, 0.5, zc + 0.03, [0.35, 0.5, 0.42]); dome(tb, xc, 0.5, zc, 0.035, [0.35, 0.5, 0.42]); solidBox(tb, xc + 0.03, 0.42, zc - 0.012, xc + 0.11, 0.44, zc + 0.012, [0.35, 0.5, 0.42]); meta.top = 0.56;
+        }
+        const BEN = [0.55, 0.38, 0.22], br = Math.min(LW, LD) * 0.3 + 0.16;
+        for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + Math.PI / 4, bx = xc + Math.cos(a) * br, bz = zc + Math.sin(a) * br; solidBox(tb, bx - 0.07, 0.02, bz - 0.07, bx + 0.07, 0.07, bz + 0.07, BEN); }
+        for (const [lx, lz] of [[x + 0.4, z + 0.4], [X1 - 0.4, Z1 - 0.4], [X1 - 0.4, z + 0.4], [x + 0.4, Z1 - 0.4]]) { solidBox(tb, lx - 0.008, 0, lz - 0.008, lx + 0.008, 0.28, lz + 0.008, [0.2, 0.22, 0.25]); solidBox(tb, lx - 0.025, 0.28, lz - 0.025, lx + 0.025, 0.31, lz + 0.025, [0.98, 0.94, 0.75]); }
+        break;
+      }
+      case 'garden': {   // jardim botânico: cerca viva só por fora, canteiros em faixas, caminhos em cruz e estufa
+        const HED = [0.3, 0.52, 0.28], SOIL = [0.45, 0.33, 0.22], PATH = [0.86, 0.8, 0.64], y = 0.013, fl = FLOWERS;
+        tb.top(x + 0.02, z + 0.02, X1 - 0.02, Z1 - 0.02, 0.011, roofC, [0.45, 0.7, 0.38]);
+        solidBox(tb, x + 0.04, 0, z + 0.04, X1 - 0.04, 0.09, z + 0.1, HED); solidBox(tb, x + 0.04, 0, Z1 - 0.1, X1 - 0.04, 0.09, Z1 - 0.04, HED);
+        solidBox(tb, x + 0.04, 0, z + 0.1, x + 0.1, 0.09, zc - 0.08, HED); solidBox(tb, x + 0.04, 0, zc + 0.08, x + 0.1, 0.09, Z1 - 0.1, HED); solidBox(tb, X1 - 0.1, 0, z + 0.1, X1 - 0.04, 0.09, zc - 0.08, HED); solidBox(tb, X1 - 0.1, 0, zc + 0.08, X1 - 0.04, 0.09, Z1 - 0.1, HED);
+        gStrip(tb, x + 0.04, zc, X1 - 0.04, zc, 0.07, y, PATH); gStrip(tb, xc, z + 0.1, xc, Z1 - 0.1, 0.06, y, PATH);
+        const gh = n >= 3 && LW >= 2;   // estufa de vidro num canto
+        const ghx0 = X1 - Math.min(1.0, LW * 0.4), ghz0 = z + 0.16, ghz1 = Math.min(zc - 0.12, z + 0.75);
+        for (let rowz = z + 0.16; rowz + 0.08 < Z1 - 0.14; rowz += 0.14) {
+          if (Math.abs(rowz + 0.04 - zc) < 0.12) continue;
+          for (const [ax, bx2] of [[x + 0.16, xc - 0.1], [xc + 0.1, X1 - 0.16]]) {
+            if (gh && bx2 > ghx0 - 0.05 && rowz < ghz1 + 0.05) continue;
+            if (bx2 - ax < 0.1) continue;
+            tb.top(ax, rowz, bx2, rowz + 0.08, 0.02, roofC, SOIL);
+            for (let fx = ax + 0.03; fx < bx2 - 0.02; fx += 0.06) { const c = pick(fl, r); solidBox(tb, fx - 0.018, 0.02, rowz + 0.022, fx + 0.018, 0.055, rowz + 0.058, c); }
+          }
+        }
+        if (gh) { const G2 = [0.72, 0.88, 0.92]; box(tb, ghx0, 0, ghz0, X1 - 0.16, 0.24, ghz1, { floors: 1, cell: 'glass', color: G2, roofColor: G2, r, top: false }); gableRoof(tb, ghx0, X1 - 0.16, ghz0, ghz1, 0.24, 0.12, [0.78, 0.92, 0.95], G2); meta.top = 0.36; }
+        meta.top = Math.max(meta.top, 0.1); break;
+      }
+      case 'playground': {  // parquinho grande: piso emborrachado, cerca e um brinquedo diferente em cada quadra
+        tb.top(x + 0.02, z + 0.02, X1 - 0.02, Z1 - 0.02, 0.011, roofC, [0.9, 0.84, 0.62]);
+        for (let tz = 0; tz < LD; tz++) for (let tx = 0; tx < LW; tx++) tb.top(x + tx + 0.1, z + tz + 0.1, x + tx + 0.9, z + tz + 0.9, 0.013, roofC, (tx + tz) % 2 ? [0.42, 0.6, 0.82] : [0.86, 0.5, 0.42]);
+        const FN = [0.92, 0.92, 0.94];
+        for (const [ax, az, bx2, bz2] of [[x + 0.04, z + 0.04, X1 - 0.04, z + 0.04], [x + 0.04, Z1 - 0.04, X1 - 0.04, Z1 - 0.04], [x + 0.04, z + 0.04, x + 0.04, Z1 - 0.04], [X1 - 0.04, z + 0.04, X1 - 0.04, Z1 - 0.04]]) {
+          const L2 = Math.hypot(bx2 - ax, bz2 - az), k = Math.max(2, Math.round(L2 / 0.25));
+          for (let i = 0; i <= k; i++) { const px = ax + (bx2 - ax) * i / k, pz = az + (bz2 - az) * i / k; if (Math.abs(px - xc) < 0.1 && pz > Z1 - 0.1) continue; solidBox(tb, px - 0.008, 0, pz - 0.008, px + 0.008, 0.12, pz + 0.008, FN); }
+          solidBox(tb, Math.min(ax, bx2) - 0.005, 0.1, Math.min(az, bz2) - 0.005, Math.max(ax, bx2) + 0.005, 0.115, Math.max(az, bz2) + 0.005, FN);
+        }
+        let k = (L.seed >>> 3) % 6; for (let tz = 0; tz < LD; tz++) for (let tx = 0; tx < LW; tx++) { playKit(tb, x + tx + 0.5, z + tz + 0.5, k % 6); k++; }
+        meta.top = 0.4; break;
+      }
+      case 'fountain': {  // espelho d'água com vários jatos e escultura no meio
+        const RIMC = [0.85, 0.83, 0.78], WAT = [0.38, 0.66, 0.92], JET = [0.62, 0.86, 1.0];
+        tb.top(x + 0.02, z + 0.02, X1 - 0.02, Z1 - 0.02, 0.011, roofC, [0.8, 0.78, 0.72]);
+        const p = 0.12; solidBox(tb, x + p, 0, z + p, X1 - p, 0.11, z + p + 0.05, RIMC); solidBox(tb, x + p, 0, Z1 - p - 0.05, X1 - p, 0.11, Z1 - p, RIMC); solidBox(tb, x + p, 0, z + p + 0.05, x + p + 0.05, 0.11, Z1 - p - 0.05, RIMC); solidBox(tb, X1 - p - 0.05, 0, z + p + 0.05, X1 - p, 0.11, Z1 - p - 0.05, RIMC);
+        tb.top(x + p + 0.05, z + p + 0.05, X1 - p - 0.05, Z1 - p - 0.05, 0.085, roofC, WAT);
+        for (let tz = 0; tz < LD; tz++) for (let tx = 0; tx < LW; tx++) { const jx = x + tx + 0.5, jz = z + tz + 0.5; if (n >= 3 && Math.hypot(jx - xc, jz - zc) < 0.3) continue; cylinder(tb, jx, jz, 0.04, 0.085, 0.11, 6, RIMC); solidBox(tb, jx - 0.012, 0.11, jz - 0.012, jx + 0.012, 0.42, jz + 0.012, JET); gDisc(tb, jx, jz, 0.1, 0.1, 0.088, [0.72, 0.88, 1.0], 10); }
+        if (n >= 3) { cylinder(tb, xc, zc, 0.1, 0.085, 0.32, 8, RIMC); cylinder(tb, xc, zc, 0.2, 0.32, 0.36, 12, RIMC, WAT); cylinder(tb, xc, zc, 0.05, 0.36, 0.52, 8, RIMC); dome(tb, xc, 0.52, zc, 0.06, [0.75, 0.62, 0.35]); solidBox(tb, xc - 0.015, 0.58, zc - 0.015, xc + 0.015, 0.75, zc + 0.015, JET); meta.top = 0.75; } else meta.top = 0.42;
+        break;
+      }
+      case 'bus': {      // terminal de ônibus: baias com ônibus, cobertura em toda a plataforma e prédio de embarque nos fundos
+        const CON = [0.78, 0.78, 0.76], ASP = [0.3, 0.31, 0.34], CAN = [0.93, 0.94, 0.96], YEL = [0.95, 0.8, 0.25], db = Math.min(0.42, LD * 0.32), front = z + db;
+        tb.top(x + 0.02, z + 0.02, X1 - 0.02, Z1 - 0.02, 0.011, roofC, CON);
+        const bays = Math.max(2, Math.floor((LW - 0.16) / 0.4)), bw = (LW - 0.16) / bays;
+        for (let k = 0; k < bays; k++) {
+          const bx0 = x + 0.08 + k * bw + 0.06, bx1 = x + 0.08 + (k + 1) * bw - 0.06;
+          tb.top(bx0, front + 0.06, bx1, Z1 - 0.02, 0.013, roofC, ASP); tb.top(bx0 - 0.012, front + 0.06, bx0, Z1 - 0.02, 0.015, roofC, YEL); tb.top(bx1, front + 0.06, bx1 + 0.012, Z1 - 0.02, 0.015, roofC, YEL);
+          if (r() < 0.75 && Z1 - front > 0.5) busModel(tb, (bx0 + bx1) / 2, front + 0.3, pick([[0.95, 0.75, 0.15], [0.2, 0.5, 0.85], [0.9, 0.3, 0.25], [0.25, 0.65, 0.4]], r));
+          if (k > 0) for (const cz2 of [front + 0.1, Z1 - 0.18]) solidBox(tb, bx0 - 0.08, 0, cz2 - 0.015, bx0 - 0.05, 0.4, cz2 + 0.015, [0.6, 0.62, 0.66]);
+        }
+        for (let k = 0; k <= bays; k++) { const sx = x + 0.08 + k * bw; solidBox(tb, sx - 0.09, 0.4, front + 0.04, sx + 0.09, 0.43, Z1 - 0.12, CAN); if (k === 0 || k === bays) for (const cz2 of [front + 0.1, Z1 - 0.18]) solidBox(tb, sx - 0.015, 0, cz2 - 0.015, sx + 0.015, 0.4, cz2 + 0.015, [0.6, 0.62, 0.66]); }
+        solidBox(tb, x + 0.05, 0.4, front + 0.02, X1 - 0.05, 0.47, front + 0.12, [0.25, 0.5, 0.85]);
+        box(tb, x + 0.06, 0, z + 0.05, X1 - 0.06, 0.34, front, { floors: 2, cell: 'glass', color: [0.72, 0.82, 0.92], roofColor: [0.6, 0.62, 0.66], r });
+        solidBox(tb, x + 0.04, 0.27, front, X1 - 0.04, 0.33, front + 0.02, [0.2, 0.45, 0.85]);
+        meta.top = 0.47; break;
+      }
+      case 'solar': {    // fazenda solar: fileiras contínuas de painéis, inversores e cerca
+        const pc = cellUV('panel'), SUP = [0.5, 0.5, 0.52];
+        tb.top(x + 0.02, z + 0.02, X1 - 0.02, Z1 - 0.02, 0.011, roofC, [0.68, 0.66, 0.58]);
+        for (let pz = z + 0.16; pz + 0.42 <= Z1 - 0.12; pz += 0.52) for (let px = x + 0.14; px + 0.5 <= X1 - 0.1; px += 0.54) {
+          solidBox(tb, px + 0.08, 0, pz + 0.1, px + 0.11, 0.15, pz + 0.13, SUP); solidBox(tb, px + 0.39, 0, pz + 0.1, px + 0.42, 0.15, pz + 0.13, SUP);
+          tb.quad([px, 0.08, pz + 0.42], [px + 0.5, 0.08, pz + 0.42], [px + 0.5, 0.22, pz], [px, 0.22, pz], pc, [0.3, 0.4, 0.65]);
+        }
+        box(tb, X1 - 0.42, 0, Z1 - 0.3, X1 - 0.1, 0.18, Z1 - 0.08, { floors: 1, cell: 'plain', color: [0.86, 0.86, 0.84], roofColor: [0.6, 0.62, 0.66], r });
+        for (const [ax, az, bx2, bz2] of [[x + 0.04, z + 0.04, X1 - 0.04, z + 0.04], [x + 0.04, Z1 - 0.04, X1 - 0.04, Z1 - 0.04], [x + 0.04, z + 0.04, x + 0.04, Z1 - 0.04], [X1 - 0.04, z + 0.04, X1 - 0.04, Z1 - 0.04]]) { const L2 = Math.hypot(bx2 - ax, bz2 - az), k = Math.max(2, Math.round(L2 / 0.5)); for (let i = 0; i <= k; i++) { const px = ax + (bx2 - ax) * i / k, pz = az + (bz2 - az) * i / k; solidBox(tb, px - 0.008, 0, pz - 0.008, px + 0.008, 0.14, pz + 0.008, [0.55, 0.57, 0.6]); } solidBox(tb, Math.min(ax, bx2) - 0.004, 0.12, Math.min(az, bz2) - 0.004, Math.max(ax, bx2) + 0.004, 0.13, Math.max(az, bz2) + 0.004, [0.55, 0.57, 0.6]); }
+        meta.top = 0.25; break;
+      }
+      case 'water': {    // estação de água: reservatórios, casa de bombas, tubulação e a caixa d'água alta
+        const TK = [0.84, 0.86, 0.88], BL = [0.3, 0.55, 0.85];
+        tb.top(x + 0.02, z + 0.02, X1 - 0.02, Z1 - 0.02, 0.011, roofC, [0.62, 0.64, 0.58]);
+        let k = 0; const tower = n >= 3 ? [LW - 1, 0] : null;
+        for (let tz = 0; tz < LD; tz++) for (let tx = 0; tx < LW; tx++, k++) {
+          const tcx = x + tx + 0.5, tcz = z + tz + 0.5;
+          if (k === 0) { box(tb, tcx - 0.3, 0, tcz - 0.22, tcx + 0.3, 0.24, tcz + 0.22, { floors: 1, cell: 'window', color: [0.86, 0.8, 0.7], roofColor: [0.6, 0.35, 0.28], r, top: false }); gableRoof(tb, tcx - 0.3, tcx + 0.3, tcz - 0.22, tcz + 0.22, 0.24, 0.1, [0.6, 0.35, 0.28], [0.86, 0.8, 0.7]); continue; }
+          if (tower && tx === tower[0] && tz === tower[1]) {
+            for (const [dx, dz] of [[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]]) solidBox(tb, tcx + dx - 0.03, 0, tcz + dz - 0.03, tcx + dx + 0.03, 0.9, tcz + dz + 0.03, [0.5, 0.52, 0.56]);
+            cylinder(tb, tcx, tcz, 0.34, 0.88, 1.32, 12, [0.6, 0.78, 0.9], [0.55, 0.72, 0.84]); cylinder(tb, tcx, tcz, 0.12, 1.32, 1.42, 8, [0.52, 0.66, 0.76]); meta.top = 1.42; continue;
+          }
+          cylinder(tb, tcx, tcz, 0.33, 0, 0.36, 16, TK, [0.72, 0.74, 0.77]); cylinder(tb, tcx, tcz, 0.335, 0.18, 0.23, 16, BL); cylinder(tb, tcx, tcz, 0.07, 0.36, 0.4, 8, [0.6, 0.62, 0.66]);
+          solidBox(tb, tcx + 0.31, 0, tcz - 0.02, tcx + 0.34, 0.36, tcz + 0.02, [0.5, 0.52, 0.56]);
+          solidBox(tb, x + 0.5, 0.04, tcz - 0.02, tcx, 0.08, tcz + 0.02, [0.55, 0.6, 0.66]);
+        }
+        solidBox(tb, x + 0.48, 0.04, z + 0.5, x + 0.52, 0.08, Z1 - 0.5, [0.55, 0.6, 0.66]);
+        meta.top = Math.max(meta.top, 0.4); break;
+      }
       case 'police': {   // central de polícia: bloco principal alto, ala da garagem com viaturas, heliponto e torre de rádio
         const BL = [0.36, 0.45, 0.66], DK = [0.2, 0.26, 0.42], fl = Math.min(6, 2 + n), h = fl * fh, wing = LW >= 2, mx1 = wing ? x + LW * 0.6 : X1 - 0.1, back = LD >= 2 ? z + 0.12 : z + 0.1, front = LD >= 2 ? Z1 - 0.42 : Z1 - 0.12;
         box(tb, x + 0.1, 0, back, mx1, h, front, { floors: fl, cell: 'ribbon', color: BL, roofColor: [0.86, 0.87, 0.9], r });
@@ -3511,7 +3809,16 @@ const R3 = (function () {
       const i = z * W + x;
       let n = 0, park = false;
       if (city.terrain[i] === T.FOREST && city.bld[i] < 0 && !city.road[i] && !city.zone[i]) n = 2 + Math.floor(Sim.hash2(x, z, 5) * 2);
-      else if (city.bld[i] >= 0) { const b = city.bmap.get(city.bld[i]); if (b && b.kind === 'park') { n = 4; park = true; } else if (b && b.kind === 'plaza') { n = 1; park = true; } }
+      else if (city.bld[i] >= 0) {
+        const b = city.bmap.get(city.bld[i]), g = b && (b.kind === 'park' || b.kind === 'plaza') ? city.groupOf(b) : null;
+        if (g) {
+          if (g.leader === b && b.x === x && b.z === z) for (const [px, pz] of comboTreeSpots(g)) {
+            const hs = Sim.hash2(x * 3 + Math.round(px * 10), z + Math.round(pz * 10), 23), ht = Sim.hash2(x * 13 + Math.round(px * 7), z * 3 + Math.round(pz * 7), 29), j = city.idx(b.x + Math.min(g.w - 1, Math.floor(px)), b.z + Math.min(g.d - 1, Math.floor(pz)));
+            spots.push({ x: b.x - HW + px, y: tileY(i) + (b.kind === 'plaza' ? 0.07 : 0), z: b.z - HH + pz, s: (b.kind === 'plaza' ? 0.65 : 0.8) + hs * 0.45, cone: false, g: ht, park: true });
+            addObstacle(j, b.x - HW + px, b.z - HH + pz, 0.07, 'tree');
+          }
+        } else if (b && b.kind === 'park') { n = 4; park = true; } else if (b && b.kind === 'plaza') { n = 1; park = true; }
+      }
       const y = tileY(i);
       for (let k = 0; k < n; k++) {
         const hx = Sim.hash2(x * 7 + k, z * 3, 11), hz = Sim.hash2(x, z * 5 + k, 17), hs = Sim.hash2(x + k, z + k, 23), ht = Sim.hash2(x * 13, z + 100 * k, 29);
@@ -3563,7 +3870,7 @@ const R3 = (function () {
   };
   function furnitureObstacles(b, i) {
     const list = obstacles.get(i); if (list) { const f = list.filter(o => o.t !== 'furn'); if (f.length) obstacles.set(i, f); else obstacles.delete(i); }
-    const f = FURN[b.kind]; if (!f || b.cons > 0) return;
+    const f = FURN[b.kind]; if (!f || b.cons > 0 || comboOf(b)) return;
     for (const [lx, lz, r] of f) addObstacle(i, b.x - HW + lx, b.z - HH + lz, r, 'furn');
   }
   function rebuildChunk(ci) {
@@ -3576,7 +3883,7 @@ const R3 = (function () {
       const meta = b.cons > 0 ? genConstruction(gb, b, city) : ZSTAT[b.kind] ? genZoneBuilding(gb, b, style, city) : genService(gb, b, style, city);
       bmeta.set(b.id, meta);
       furnitureObstacles(b, z * W + x);
-      if (COMBO[b.kind]) { const g = comboOf(b); comboRole.set(b.id, g ? g.sig : ''); if (g) for (const m of g.mem) if (chunkOfB(m) !== ci) mates.add(m.id); }
+      if (COMBO_VIS[b.kind]) { const g = comboOf(b); comboRole.set(b.id, g ? g.sig : ''); if (g) for (const m of g.mem) if (chunkOfB(m) !== ci) mates.add(m.id); }
     }
     // construções de outros blocos que formam (ou formavam) um complexo com as daqui: se o papel delas mudou, redesenha o bloco delas
     if (mates.size) chunkMates.set(ci, mates); else chunkMates.delete(ci);
@@ -5706,7 +6013,8 @@ const R3 = (function () {
   }
   let coverKey = '';
   function setCoverage(spec) {
-    const key = spec ? [spec.kind, spec.x, spec.z].join(',') : '';
+    let gs = ''; if (spec && city && DEFS[spec.kind] && Sim.COMBO[spec.kind] && city.inb(spec.x, spec.z)) { const bA = city.bmap.get(city.bld[city.idx(spec.x, spec.z)]), gg = bA ? city.groupOf(bA) : city.groupPreview(spec.kind, spec.x, spec.z); gs = gg ? gg.sig + '/' + gg.n : ''; }
+    const key = spec ? [spec.kind, spec.x, spec.z, gs].join(',') : '';
     if (key === coverKey) return; coverKey = key;
     if (coverMesh) { scene.remove(coverMesh); coverMesh.geometry.dispose(); coverMesh = null; }
     if (!spec || !city) return;
@@ -5714,11 +6022,13 @@ const R3 = (function () {
     const covName = d.cov || (d.power ? 'power' : d.water ? 'water' : null); if (!covName) return;
     const col = COV_COL[covName] || [1, 1, 1];
     const gb = new GeoBuilder(); const c = cellUV('plain');
-    const cx = spec.x + d.size / 2, cz = spec.z + d.size / 2, R = d.radius;
+    const bAt = city.inb(spec.x, spec.z) ? city.bmap.get(city.bld[city.idx(spec.x, spec.z)]) : null;
+    const grp = bAt && bAt.kind === spec.kind ? city.groupOf(bAt) : !bAt ? city.groupPreview(spec.kind, spec.x, spec.z) : null, bo = grp ? Sim.comboBonus(grp.n) : null;
+    const cx = grp ? grp.cx : spec.x + d.size / 2, cz = grp ? grp.cz : spec.z + d.size / 2, R = d.radius * (bo ? bo.R : 1), core = bo ? bo.core : 0.6;
     for (let z = Math.max(0, Math.floor(cz - R)); z <= Math.min(H - 1, Math.ceil(cz + R)); z++) for (let x = Math.max(0, Math.floor(cx - R)); x <= Math.min(W - 1, Math.ceil(cx + R)); x++) {
       const dx = x + 0.5 - cx, dz = z + 0.5 - cz, dist = Math.sqrt(dx * dx + dz * dz); if (dist > R) continue;
       const i = z * W + x; if (city.terrain[i] === T.WATER && !city.road[i]) continue;
-      const k = d.cov ? (dist <= 0.6 * R ? 1 : 1 - (dist - 0.6 * R) / (0.4 * R + 1)) : 1;
+      const k = d.cov ? (dist <= core * R ? 1 : 1 - (dist - core * R) / ((1 - core) * R + 1)) : 1;
       const y = city.road[i] ? surfY(i, 0.5, 0.5) + 0.052 : tileY(i) + 0.018;
       const edge = dist > R - 1 ? 1.25 : 1;
       gb.top(x - HW + 0.03, z - HH + 0.03, x - HW + 0.97, z - HH + 0.97, y, c, [Math.min(1, col[0] * (0.5 + 0.5 * k) * edge), Math.min(1, col[1] * (0.5 + 0.5 * k) * edge), Math.min(1, col[2] * (0.5 + 0.5 * k) * edge)]);
@@ -5981,6 +6291,9 @@ const Snd = (function () {
 (function () {
   'use strict';
   const $ = s => document.querySelector(s);
+  const APP_VERSION = {"v":36,"date":"2026-11-16","notes":["Ampliações com efeito: construções iguais, encostadas e alinhadas viram um complexo com mais alcance, atendimento mais forte, manutenção mais barata e, nas usinas e caixas d'água, mais produção.","Agora também ampliam: parques (com lago e coreto), praças, jardins, playgrounds, fontes, pontos de ônibus (terminal), caixas d'água (estação de água), usinas solares (fazenda solar), metrô, aterro, reciclagem, eólicas e termelétricas.","Ao construir encostado em outra igual, a prévia mostra o complexo que vai se formar e o alcance novo.","Tela de entrada e número da versão no jogo (aqui e no Menu)."]};
+  const VER = (typeof APP_VERSION !== 'undefined' && APP_VERSION) || { v: 0, date: '', notes: [] };
+  const verDate = () => { const p = String(VER.date || '').split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : ''; };
   const { City, DEFS, HAND, TERRA, ROADS, ISSUE_TIPS, ZONE_NAMES, LEVEL_NAMES, ZSTAT, MISSIONS, ACHIEVEMENTS, SCENARIOS, T, Z, W, H, PARCEL, PX } = Sim;
   const STEP_MS = 400;
   const SAVE_KEY = 'cidadenova_save_v1', SET_KEY = 'cidadenova_settings_v1';
@@ -6286,14 +6599,14 @@ const Snd = (function () {
     return { count, cost, blocked, ok, reason: ok ? null : reason, name };
   }
   function showPending() {
-    const pd = state.pending, bar = $('#confirm');
+    const pd = state.pending, bar = $('#confirm'), c0 = state.city;
     if (!pd) { bar.hidden = true; return; }
     const info = pendingInfo(pd);
     const ic = (TOOLS[pd.tool] || {}).ic || '';
     const head = `${ic} <b>${esc(info.name)}</b>`;
     const again = '<small>· toque de novo para construir</small>', bad = `<small class="bad">· ${esc(info.reason || '')}</small>`;
     let txt;
-    if (pd.mode === 'place') txt = `${head} · ${fmt(info.cost)}` + (info.ok ? again : bad);
+    if (pd.mode === 'place') { const gp = info.ok && Sim.COMBO[pd.tool] ? c0.groupPreview(pd.tool, pd.a.x, pd.a.z) : null; txt = `${head} · ${fmt(info.cost)}` + (gp ? `<small class="good">· amplia: complexo de ${gp.n} (alcance +${Math.round((Sim.comboBonus(gp.n).R - 1) * 100)}%)</small>` : '') + (info.ok ? again : bad); }
     else if (info.chain) txt = `${head}<small>· toque onde ela continua, ou ✕</small>`;
     else if (!pd.b) txt = `${head} · ${fmt(info.cost)}` + (info.ok ? `<small>· ${isLineTool(pd.tool) ? 'toque onde termina' : 'toque no canto oposto'}</small>` : bad);
     else txt = `${head} · ${plural(info.count, 'quadra', 'quadras')} · ${fmt(info.cost)}${info.blocked ? ` <span class="warn">(${info.blocked} bloq.)</span>` : ''}` + (info.ok ? again : bad);
@@ -6742,10 +7055,13 @@ const Snd = (function () {
         title = d.name;
         parts.push(`<p class="sub">${esc(d.desc)}</p>`);
         if (b.cons > 0) parts.push(`<p class="sub"><b class="warn">🏗️ Em obras:</b> começa a funcionar em ${plural(b.cons, 'mês', 'meses')}.</p>`);
-        parts.push(`<div class="row"><span>Manutenção</span><b>${fmt(d.upkeep)}/mês</b></div>`);
-        if (d.power) parts.push(`<div class="row"><span>Energia gerada</span><b>${d.power} unidades</b></div><div class="row"><span>Cidade usa</span><b>${c.stats.powerUse} / ${c.stats.powerSupply}</b></div>`);
-        if (d.water) parts.push(`<div class="row"><span>Água fornecida</span><b>${d.water} unidades</b></div><div class="row"><span>Cidade usa</span><b>${c.stats.waterUse} / ${c.stats.waterSupply}</b></div>`);
-        if (d.radius) { parts.push(`<div class="row"><span>Alcance</span><b>${d.radius} quadras</b></div><p class="sub">A área atendida está colorida no mapa enquanto este painel estiver aberto.</p>`); R3.setCoverage({ kind: b.kind, x: b.x, z: b.z }); state.coverFromPanel = true; }
+        const grp = c.groupOf(b), bo = grp ? Sim.comboBonus(grp.n) : null, pct = v => Math.round((v - 1) * 100);
+        if (grp) parts.push(`<p class="sub good">🏗️ <b>Complexo de ${grp.n} unidades</b> (${grp.nx}×${grp.nz}): alcance +${pct(bo.R)}%${d.cov && d.covW && d.covW < 1 ? `, atendimento +${pct(bo.w)}%` : ''}, manutenção −${Math.round((1 - bo.up) * 100)}%${d.power || d.water ? `, produção +${pct(bo.out)}%` : ''}.</p>`);
+        else if (Sim.COMBO[b.kind]) parts.push(`<p class="sub">Dica: construa outra igual encostada e alinhada a esta para virar um complexo maior, com mais alcance e manutenção mais barata.</p>`);
+        parts.push(`<div class="row"><span>Manutenção</span><b>${fmt(Math.round(d.upkeep * (bo ? bo.up : 1)))}/mês</b></div>`);
+        if (d.power) parts.push(`<div class="row"><span>Energia gerada</span><b>${Math.round(d.power * (bo ? bo.out : 1))} unidades</b></div><div class="row"><span>Cidade usa</span><b>${c.stats.powerUse} / ${c.stats.powerSupply}</b></div>`);
+        if (d.water) parts.push(`<div class="row"><span>Água fornecida</span><b>${Math.round(d.water * (bo ? bo.out : 1))} unidades</b></div><div class="row"><span>Cidade usa</span><b>${c.stats.waterUse} / ${c.stats.waterSupply}</b></div>`);
+        if (d.radius) { parts.push(`<div class="row"><span>Alcance</span><b>${Math.round(d.radius * (bo ? bo.R : 1) * 10) / 10} quadras</b></div><p class="sub">A área atendida está colorida no mapa enquanto este painel estiver aberto.</p>`); R3.setCoverage({ kind: b.kind, x: b.x, z: b.z }); state.coverFromPanel = true; }
       }
       common();
       parts.push('<div class="actions"><button class="btn ghost" data-center>Centralizar</button>' + (b.kind !== 'port' && b.kind !== 'cruise' ? '<button class="btn ghost" data-rotate>🔄 Girar</button>' : '') + '<button class="btn ghost" data-walk>Andar aqui</button><button class="btn danger" data-demolish>Demolir</button></div>');
@@ -6936,6 +7252,7 @@ const Snd = (function () {
       <label class="field">Qualidade<select id="opt-quality"><option value="auto" ${st.quality === 'auto' ? 'selected' : ''}>Automática</option><option value="low" ${st.quality === 'low' ? 'selected' : ''}>Baixa (mais leve)</option><option value="high" ${st.quality === 'high' ? 'selected' : ''}>Alta</option></select></label>
       <div class="actions col"><button class="btn ghost" id="m-tutorial">Ver tutorial</button></div>
       <p class="sub" id="cloud-status">${state.cloudDoc ? 'Progresso salvo também na sua conta: continue de qualquer aparelho.' : 'Progresso salvo neste aparelho (e na sua conta, quando disponível).'}</p>
+      <p class="ver-line">Cidade Nova · versão ${VER.v}${verDate() ? ` (${verDate()})` : ''} · <a href="#" id="m-notes">novidades</a></p>
       <p class="sub small">Atalhos: WASD/setas movem, Q/E giram, roda do mouse dá zoom, espaço pausa, R gira o prédio (em relação à rua), Enter confirma e Esc cancela a construção, 1–9 trocam de categoria. 🚶 Andar e 🚗 Dirigir: toque no mapa onde quer começar; Esc sai.</p>`;
     return {
       title: 'Menu', html, after: body => {
@@ -6948,6 +7265,7 @@ const Snd = (function () {
         body.querySelector('#m-import').addEventListener('click', importDialog);
         body.querySelector('#m-new').addEventListener('click', newGameDialog);
         body.querySelector('#m-tutorial').addEventListener('click', () => showTutorial(true));
+        body.querySelector('#m-notes').addEventListener('click', e => { e.preventDefault(); showNotes(); });
         body.querySelector('#opt-confirm').addEventListener('change', e => { st.confirmBuild = e.target.checked; saveSettings(); clearPending(); if (state.tool !== 'hand') showHint(toolHint(state.tool), false); });
         body.querySelector('#opt-notify').addEventListener('change', e => { st.notify = e.target.value; saveSettings(); });
         body.querySelector('#opt-sfx').addEventListener('change', e => { st.sfx = e.target.checked; Snd.setEnabled('sfx', st.sfx); saveSettings(); });
@@ -6996,6 +7314,39 @@ const Snd = (function () {
     render();
   }
 
+  function showNotes() {
+    const list = (VER.notes || []).map(t => `<li>${esc(t)}</li>`).join('');
+    openModal(`<h2>Novidades da versão ${VER.v}</h2><p class="sub">${esc(verDate())}</p><ul class="notes">${list}</ul><div class="actions"><button class="btn" id="nt-ok">Legal!</button></div>`, card => card.querySelector('#nt-ok').addEventListener('click', closeModal));
+  }
+  // ----- tela de entrada: a cidade gira devagar ao fundo até o jogador tocar em continuar -----
+  function introText() {
+    const c = state.city; if (!c) return;
+    const fresh = state.introSource === 'new';
+    $('#in-go').textContent = fresh ? '▶ Começar' : '▶ Continuar';
+    $('#in-city').textContent = fresh ? 'Uma cidade novinha espera por você.' : `${c.name} · ano ${c.year} · ${Math.round(c.stats.pop || 0).toLocaleString('pt-BR')} habitantes`;
+    $('#in-ver').textContent = `Versão ${VER.v}${verDate() ? ' · ' + verDate() : ''} · ver novidades`;
+  }
+  function openIntro(source) {
+    state.introSource = source; state.introOn = true; state.introCam = R3.getCam(); state.introSpeed = state.speed || 1; state.speed = 0;
+    const cm = state.introCam; R3.setCam({ pitch: 0.72, dist: Math.min(40, Math.max(20, cm.dist * 1.6)) });
+    introText(); $('#intro').hidden = false; $('#intro').classList.remove('out'); document.body.classList.add('intro-on');
+    $('#in-go').onclick = () => closeIntro();
+    $('#in-new').onclick = () => { closeIntro(true); setTimeout(newGameDialog, 250); };
+    $('#in-opts').onclick = () => { closeIntro(true); setTimeout(() => togglePanel('menu'), 250); };
+    $('#in-ver').onclick = () => showNotes();
+  }
+  function closeIntro(quiet) {
+    if (!state.introOn) return;
+    state.introOn = false; try { Snd.resume(); } catch (_) { }
+    const el = $('#intro'); el.classList.add('out'); document.body.classList.remove('intro-on'); setTimeout(() => { el.hidden = true; }, 600);
+    if (state.introCam) R3.setCam(state.introCam);
+    state.speed = state.introSpeed || 1; document.querySelectorAll('#speed button').forEach(b => b.classList.toggle('on', Number(b.dataset.speed) === state.speed));
+    sfx('click');
+    const seen = state.settings.lastVer; state.settings.lastVer = VER.v; saveSettings();
+    if (quiet) return;
+    if (state.introSource === 'new' && !state.settings.tutorialSeen) { setTimeout(() => showTutorial(false), 350); return; }
+    if (seen && seen < VER.v && (VER.notes || []).length) setTimeout(showNotes, 450);
+  }
   function newGameDialog() {
     const mapOpts = Object.entries(SCENARIOS.map).map(([k, n]) => `<option value="${k}">${esc(n)}</option>`).join('');
     const diffOpts = Object.entries(SCENARIOS.diff).map(([k, d]) => `<option value="${k}" ${k === 'normal' ? 'selected' : ''}>${esc(d.name)} ($ ${d.money.toLocaleString('pt-BR')})</option>`).join('');
@@ -7034,6 +7385,7 @@ const Snd = (function () {
     state.unread = 0; updateNewsBadge(); state.coverFromPanel = false;
     if (state.panel) renderPanel();
     updateHUD();
+    if (state.introOn) { state.introSource = 'local'; introText(); state.introCam = R3.getCam(); }
   }
 
   function viewState() { return { cam: R3.getCam(), tod: R3.getTod(), style: R3.styleName }; }
@@ -7144,6 +7496,7 @@ const Snd = (function () {
     if (steps >= 12) state.acc = 0;
     if (steps) flushEvents();
     if (c.monthChanged) { c.monthChanged = false; onMonth(); }
+    if (state.introOn) { const cm = R3.getCam(); R3.setCam({ yaw: cm.yaw + dtReal * 0.07 }); }
     R3.frame(dtReal, sp);
     state.hudTimer += dtReal;
     if (state.hudTimer > 0.25) { state.hudTimer = 0; updateHUD(); }
@@ -7174,7 +7527,9 @@ const Snd = (function () {
     R3.setCity(city);
     applyView(view);
     updateHUD();
-    if (source === 'new' && !state.settings.tutorialSeen) showTutorial(false);
+    // tela de entrada (não aparece em recarga a quente nem em testes automáticos)
+    if (source !== 'hot' && !navigator.webdriver) openIntro(source);
+    else { if (!state.settings.lastVer) { state.settings.lastVer = VER.v; saveSettings(); } if (source === 'new' && !state.settings.tutorialSeen) showTutorial(false); }
     if (window.claude && window.claude.hot && typeof window.claude.hot.snapshot === 'function') {
       try { window.claude.hot.snapshot(() => ({ save: state.city.serialize(viewState()) })); } catch (e) { }
     }
@@ -7190,7 +7545,7 @@ const Snd = (function () {
     document.addEventListener('visibilitychange', () => { if (document.hidden) { saveLocal(); scheduleCloudSave(true); } else state.last = performance.now(); });
     window.addEventListener('pagehide', () => saveLocal());
     selectCat('hand');
-    window.CidadeNova = { get city() { return state.city; }, adoptCity, R3, Sim, enterExplore, exitExplore, selectCat, setTool, tapTile, confirmPending, clearPending, openPanel, get state() { return state; } };
+    window.CidadeNova = { get city() { return state.city; }, adoptCity, openIntro, closeIntro, showNotes, R3, Sim, enterExplore, exitExplore, selectCat, setTool, tapTile, confirmPending, clearPending, openPanel, get state() { return state; } };
     if (source === 'new') saveLocal();
     state.last = performance.now();
     requestAnimationFrame(loop);
