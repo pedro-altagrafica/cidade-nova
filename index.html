@@ -1685,6 +1685,7 @@ const Sim = (function () {
         for (let dz = 0; dz < FD(b); dz++) for (let dx = 0; dx < FW(b); dx++) c.bld[c.idx(b.x + dx, b.z + dz)] = b.id;
         if (b.id >= c.nextId) c.nextId = b.id + 1;
       }
+      c._groups = null; c._grpDirty = true;     // os conjuntos são recalculados com os prédios já carregados
       c.milestones = data.milestones || []; c.loans = data.loans || []; c.demand = data.demand || c.demand;
       c.citsSave = Array.isArray(data.cits) ? data.cits : null; c.flags = Object.assign(c.flags, data.flags || {}); c.policies = data.policies || {}; c.history = data.history || [];
       c.missionIdx = data.missionIdx || 0; c.achievements = data.achievements || []; c.counters = Object.assign(c.counters, data.counters || {});
@@ -6129,7 +6130,8 @@ const R3 = (function () {
     const boxOk = boxed && (a.blockAll || 0) < 20, yOk = yielding && (a.blockAll || 0) < 14;   // esperas com prazo: depois disso conta como travado
     a.qd = red || inQueue || boxOk || yOk ? 1 : qf ? (idleCar(ld) ? 1 : ld.qd) + 1 : 0;
     if (red || inQueue || qf) a.block = 0; else if (boxOk || yOk) { a.block = 0; a.blockAll = (a.blockAll || 0) + dt; } else if (goal < 0.05) { a.block = (a.block || 0) + dt; a.blockAll = (a.blockAll || 0) + dt; if (a.block > 3) { a.force = 1.6; a.block = 0; tEv.force++; if (a.px !== undefined) sndAt('horn', a.px, a.pz, 5); } if (a.blockAll > 30) { a.blockAll = 0; if (a.spec === 'bus' || a.lights) { a.ghost = 2.5; tEv.blockGhost++; } else { tEv.vanish++; a.vanished = true; { const w = (a.why || '-') + (isJunction(B) ? (isSignal(B) ? '@sig' : '@J') : '') + (C === A ? '@U' : '') + ':' + a.type + (a.gapBy ? '>' + a.gapBy.type + '/' + a.gapBy.state + '/' + (a.gapBy.why || '-') : ''); tEv.vw = tEv.vw || {}; tEv.vw[w] = (tEv.vw[w] || 0) + 1; } a.state = 'arrive'; a.fade = 1; a.loop = null; a.back = null; } } } else { a.block = 0; if (a.v > 0.5) a.blockAll = 0; }
-    { const inBox = (a.t > 0.62 && isJunction(B)) || (a.t < 0.4 && isJunction(A)); if (inBox && (a.v || 0) < 0.05 && !(a.crashT > 0) && gap > 0.3) { a.boxT = (a.boxT || 0) + dt; if (a.boxT > 4) { a.ghost = 2.4; a.boxT = 0; tEv.boxGhost++; } } else a.boxT = 0; }
+    // parado dentro do cruzamento trava todo mundo: depois de uns segundos atravessa
+    { const inBox = (a.t > 0.62 && isJunction(B)) || (a.t < 0.4 && isJunction(A)) || (isJunction(A) && isJunction(B)); if (inBox && (a.v || 0) < 0.05 && !(a.crashT > 0) && !red) { a.boxT = (a.boxT || 0) + dt; if (a.boxT > (gap > 0.3 ? 3 : 6)) { a.ghost = 2.4; a.boxT = 0; tEv.boxGhost++; } } else a.boxT = 0; }
     if (a.force > 0) a.force -= dt; if (a.ghost > 0) a.ghost -= dt;
     if (a.v === undefined) a.v = 0.2;
     a.v += clamp(goal - a.v, -4.5 * dt, 1.4 * dt);
@@ -7262,7 +7264,7 @@ const Snd = (function () {
 (function () {
   'use strict';
   const $ = s => document.querySelector(s);
-  const APP_VERSION = {"v":43,"date":"2026-11-17","notes":["Ruas: \"esquina\" é o padrão de novo e as esquinas não viram mais curva sozinhas; curvas não passam mais por cima de prédios.","Trânsito: carros não fazem mais conversão/retorno no meio da rua; esperam a outra pista livre antes de cruzar.","Pontes: emenda da curva entre a terra e a ponte ficou lisa.","Orla emendada vira uma praia grande: calçadão, coqueiros, quiosques, guarda-sóis, salva-vidas e vôlei.","Os carros estacionam de verdade nos estacionamentos e o motorista vai a pé até o destino.","Universidade, escola, museu, zoológico e hospital recebem visitantes e estudantes na frente."]};
+  const APP_VERSION = {"v":44,"date":"2026-11-17","notes":["Conjuntos de prédios (polícia, bombeiros etc.) não voltam mais ao tamanho normal ao reabrir o jogo.","Cruzamentos: carro parado atravessado dentro do cruzamento sai em poucos segundos, sem travar todo mundo.","Ruas: \"esquina\" é o padrão de novo e as esquinas não viram mais curva sozinhas; curvas não passam mais por cima de prédios.","Trânsito: carros não fazem mais conversão/retorno no meio da rua; esperam a outra pista livre antes de cruzar.","Pontes: emenda da curva entre a terra e a ponte ficou lisa.","Orla emendada vira uma praia grande: calçadão, coqueiros, quiosques, guarda-sóis, salva-vidas e vôlei.","Os carros estacionam de verdade nos estacionamentos e o motorista vai a pé até o destino.","Universidade, escola, museu, zoológico e hospital recebem visitantes e estudantes na frente."]};
   const VER = (typeof APP_VERSION !== 'undefined' && APP_VERSION) || { v: 0, date: '', notes: [] };
   const verDate = () => { const p = String(VER.date || '').split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : ''; };
   const { City, DEFS, HAND, TERRA, ROADS, ISSUE_TIPS, ZONE_NAMES, LEVEL_NAMES, ZSTAT, MISSIONS, ACHIEVEMENTS, SCENARIOS, T, Z, W, H, PARCEL, PX } = Sim;
